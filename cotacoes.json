@@ -1,5 +1,43 @@
 {
- "atualizado": null,
- "ativos": {},
- "falhas": []
+ "ativos": {
+  "HGLG11": {
+   "atualizado": "2026-10-27T10:17",
+   "fonte": "B3",
+   "hora_fonte": "2026-10-27 10:17:50",
+   "preco": 151.7,
+   "var_dia": 0.0
+  },
+  "HGRU11": {
+   "atualizado": "2026-10-27T10:17",
+   "fonte": "B3",
+   "hora_fonte": "2026-10-27 10:17:52",
+   "preco": 118.0,
+   "var_dia": 0.55
+  },
+  "JSRE11": {
+   "atualizado": "2026-10-27T10:17",
+   "fonte": "B3",
+   "hora_fonte": "2026-10-27 10:17:54",
+   "preco": 61.51,
+   "var_dia": -0.47
+  },
+  "KNRI11": {
+   "atualizado": "2026-10-27T10:17",
+   "fonte": "B3",
+   "hora_fonte": "2026-10-27 10:17:53",
+   "preco": 154.83,
+   "var_dia": 0.9
+  }
+ },
+ "atualizado": "2026-10-27T10:17",
+ "falhas": [
+  "BTCI11",
+  "CPTS11",
+  "KNCR11",
+  "MXRF11",
+  "BTLG11",
+  "XPML11",
+  "VISC11",
+  "HGCR11"
+ ]
 }
