@@ -1,0 +1,27 @@
+name: Atualiza cotacoes
+on:
+  schedule:
+    # De hora em hora, das 10h05 às 18h05 (Brasília), de segunda a sexta
+    - cron: '5 13-21 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cotacoes
+  cancel-in-progress: false
+jobs:
+  atualiza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Busca cotacoes
+        env:
+          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
+        run: python3 atualiza.py
+      - name: Salva
+        run: |
+          git config user.name "cotacoes-bot"
+          git config user.email "cotacoes-bot@users.noreply.github.com"
+          git add cotacoes.json
+          git diff --cached --quiet || (git commit -m "Cotacoes $(TZ=America/Sao_Paulo date +'%d/%m %H:%M')" && git push)
