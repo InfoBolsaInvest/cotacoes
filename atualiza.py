@@ -62,15 +62,24 @@ except Exception:
 
 ativos = {}
 falhas = []
+motivos = {}
 for t in tickers:
     q = None
-    for fonte in (da_b3, da_brapi):
-        try:
-            q = fonte(t)
-        except Exception as e:
-            q = None
+    for tentativa in range(3):
+        for fonte in (da_b3, da_brapi):
+            try:
+                q = fonte(t)
+                if not q:
+                    motivos[t] = fonte.__name__ + ': sem preco'
+            except Exception as e:
+                q = None
+                motivos[t] = fonte.__name__ + ': ' + str(e)[:120]
+            if q:
+                break
         if q:
+            motivos.pop(t, None)
             break
+        time.sleep(3)
     if q:
         q['atualizado'] = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime('%Y-%m-%dT%H:%M')
         ativos[t] = q
@@ -81,8 +90,8 @@ for t in tickers:
     time.sleep(0.4)
 
 agora = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime('%Y-%m-%dT%H:%M')
-saida = {'atualizado': agora, 'ativos': ativos, 'falhas': falhas}
+saida = {'atualizado': agora, 'ativos': ativos, 'falhas': falhas, 'motivos': motivos}
 json.dump(saida, open('cotacoes.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
-print('ok', len(ativos) - len(falhas), 'atualizados; falhas:', falhas)
+print('ok', len(tickers) - len(falhas), 'atualizados; falhas:', motivos)
 if len(falhas) == len(tickers):
     raise SystemExit('nenhuma cotacao obtida')
