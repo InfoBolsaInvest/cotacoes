@@ -1,4 +1,4 @@
-name: Atualiza cotacoes
+name: Atualiza cotacoes automaticas
 on:
   schedule:
     # De hora em hora, das 10h05 às 18h05 (Brasília), de segunda a sexta
