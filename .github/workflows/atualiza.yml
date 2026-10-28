@@ -1,8 +1,8 @@
 name: Atualiza cotacoes automaticas
 on:
   schedule:
-    # De hora em hora, das 10h05 às 18h05 (Brasília), de segunda a sexta
-    - cron: '5 13-21 * * 1-5'
+    # A cada 10 minutos, das 10h às 18h (Brasília), de segunda a sexta
+    - cron: '*/10 13-21 * * 1-5'
   workflow_dispatch:
 permissions:
   contents: write
