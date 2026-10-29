@@ -76,7 +76,7 @@ jobs:
           git config user.name "cotacoes-bot"
           git config user.email "cotacoes-bot@users.noreply.github.com"
           git add logos
-          git diff --cached --quiet || (git commit -m "Logos de empresas novas" && git pull --rebase -q && git push)
+          git diff --cached --quiet || (git commit -m "Logos de empresas novas" && for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && break; sleep $((i * 5)); done)
       - name: Avisa no Telegram se a rodada quebrou
         if: failure()
         env:
