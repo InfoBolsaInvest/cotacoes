@@ -1,0 +1,29 @@
+name: Logos das empresas
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  logos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Baixa os logos
+        run: |
+          mkdir -p logos
+          for t in $(python3 -c "import json;d=json.load(open('noticias/ativos.json'));print(' '.join(k for k,v in d.items() if isinstance(v,dict) and v.get('tipo')=='acao'))"); do
+            if curl -sfL -o "logos/$t.svg" "https://icons.brapi.dev/icons/$t.svg"; then
+              echo "::notice::$t $(wc -c < logos/$t.svg) bytes"
+            else
+              echo "::warning::$t sem logo"; rm -f "logos/$t.svg"
+            fi
+          done
+      - name: Salva no repositório
+        run: |
+          git config user.name "cotacoes-bot"
+          git config user.email "cotacoes-bot@users.noreply.github.com"
+          git add logos
+          git diff --cached --quiet || (git commit -m "Logos das empresas" && git push)
