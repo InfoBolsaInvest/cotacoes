@@ -66,6 +66,7 @@ TURNO = os.environ.get("TURNO") or ("manha" if AGORA.hour < 12 else "noite")
 BUSCAR_PORTAIS = os.environ.get("PORTAIS", "auto")
 BUSCAR_PORTAIS = (TURNO == "manha") if BUSCAR_PORTAIS == "auto" else BUSCAR_PORTAIS == "1"
 TESTE = os.environ.get("TESTE") == "1"   # nao grava nada, so mostra
+SO_RENDIMENTOS = os.environ.get("REPROCESSAR_RENDIMENTOS") == "1"   # refaz so os proventos
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; InfoBolsa-noticias/1.0)"}
 
@@ -307,7 +308,8 @@ def grava_noticia(doc_id, item):
     item["resumo"] = sem_travessao(item.get("resumo"))[:700]
     item["criado_em"] = AGORA.isoformat(timespec="seconds")
     if TESTE:
-        TESTE_SAIDA.append(f"{item['ticker']} | {item['tipo']} | {item.get('data','')} | {item['titulo']} | {item['resumo'][:160]}")
+        TESTE_SAIDA.append(f"{item['ticker']} | {item['tipo']} | {item.get('data','')} | {item['titulo']} | {item['resumo'][:160]}"
+                           + (" | " + json.dumps(item["proventos"], ensure_ascii=False) if item.get("proventos") else ""))
         return True
     from google.api_core.exceptions import AlreadyExists
     try:
@@ -407,6 +409,8 @@ def fontes_fii(ticker, info, desde_iso, novos):
         tipo_doc = (d.get("tipoDocumento") or "").strip()
         quando = data_br_para_iso(d.get("dataEntrega"))
         if not quando or quando[:10] < desde_iso or cat not in CATEGORIAS_FII:
+            continue
+        if SO_RENDIMENTOS and cat != "Aviso aos Cotistas - Estruturado":
             continue
         if cat == "Relatórios" and "Gerencial" not in tipo_doc:
             continue
@@ -534,6 +538,8 @@ def fontes_acao(ticker, info, desde_iso, novos):
         txt = (d["assunto"] + " " + d["tipo"]).lower()
         if d["categoria"] == "Aviso aos Acionistas" and re.search(r"dividend|juros sobre|jcp|provento|rendimento", txt):
             tipo = "Rendimento"
+        if SO_RENDIMENTOS and tipo != "Rendimento":
+            continue
         link = RAD + "frmExibirArquivoIPEExterno.aspx?NumeroProtocoloEntrega=" + d["protocolo"]
         pdf = None
         try:
@@ -659,7 +665,7 @@ def main():
             traceback.print_exc()
 
     # 2) portais (comeca pelos ativos buscados ha mais tempo, para revezar se o limite cortar)
-    if BUSCAR_PORTAIS:
+    if BUSCAR_PORTAIS and not SO_RENDIMENTOS:
         estados = {t: estado_ativo(t) for t in ativos}
         ordem = sorted(ativos, key=lambda t: estados[t].get("portais_em", ""))
         desde_portais = (AGORA.date() - dt.timedelta(days=2)).isoformat()
