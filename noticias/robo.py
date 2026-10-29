@@ -32,7 +32,7 @@ PORTAIS_CONFIAVEIS = ["infomoney.com.br", "valor.globo.com", "valorinveste.globo
     "exame.com", "estadao.com.br", "einvestidor.estadao.com.br", "folha.uol.com.br", "g1.globo.com", "oglobo.globo.com",
     "cnnbrasil.com.br", "seudinheiro.com", "bloomberglinea.com.br", "br.reuters.com", "reuters.com", "investnews.com.br",
     "braziljournal.com", "istoedinheiro.com.br", "poder360.com.br", "suno.com.br", "fiis.com.br", "neofeed.com.br",
-    "agenciabrasil.ebc.com.br", "infomoney.com.br", "forbes.com.br", "veja.abril.com.br", "metropoles.com"]
+    "agenciabrasil.ebc.com.br", "forbes.com.br", "veja.abril.com.br", "metropoles.com"]
 DOMINIOS_BLOQUEADOS = ["statusinvest.com.br", "investidor10.com.br", "fundamentus.com.br",
                        "clubefii.com.br", "br.tradingview.com", "br.investing.com",
                        "fundsexplorer.com.br", "fiis.com.br"]
