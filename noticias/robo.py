@@ -331,7 +331,8 @@ def salva_estado_ativo(ticker, dados):
     if not TESTE:
         db().collection("ativos").document(ticker).set(dados, merge=True)
 
-FEED_MAX = 200
+FEED_MAX = 600          # cerca de 4 meses de historico
+FEED_MAX_BYTES = 900_000   # documento do Firestore aceita ate 1 MB
 CAMPOS_FEED = ("ticker", "tipo", "data", "titulo", "resumo", "link", "fonte", "importante", "motivo", "variacao", "proventos")
 
 def atualiza_feed(cli, tickers):
@@ -342,10 +343,13 @@ def atualiza_feed(cli, tickers):
             d = snap.to_dict()
             itens.append({k: d[k] for k in CAMPOS_FEED if k in d})
     itens.sort(key=lambda x: (x.get("data") or ""), reverse=True)
+    itens = itens[:FEED_MAX]
+    while len(json.dumps(itens, ensure_ascii=False).encode()) > FEED_MAX_BYTES:
+        itens = itens[:int(len(itens) * 0.9)]
     db().collection("feeds").document(cli).set({
         "atualizado": AGORA.isoformat(timespec="seconds"),
         "tickers": tickers,
-        "itens_json": json.dumps(itens[:FEED_MAX], ensure_ascii=False),
+        "itens_json": json.dumps(itens, ensure_ascii=False),
     })
 
 # ---------------------------------------------------------------- Telegram
