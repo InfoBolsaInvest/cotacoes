@@ -108,6 +108,7 @@ class Custo:
             self.buscas += getattr(stu, "web_search_requests", 0) or 0
 
 CUSTO = Custo()
+TESTE_SAIDA = []
 
 # ---------------------------------------------------------------- IA
 _cliente_ia = None
@@ -229,7 +230,7 @@ def grava_noticia(doc_id, item):
     item["resumo"] = sem_travessao(item.get("resumo"))[:700]
     item["criado_em"] = AGORA.isoformat(timespec="seconds")
     if TESTE:
-        log("  [teste]", doc_id, json.dumps(item, ensure_ascii=False)[:400])
+        TESTE_SAIDA.append(f"{item['ticker']} | {item['tipo']} | {item.get('data','')} | {item['titulo']} | {item['resumo'][:160]}")
         return True
     from google.api_core.exceptions import AlreadyExists
     try:
@@ -550,6 +551,8 @@ def main():
           f"{CUSTO.chamadas} chamadas, {CUSTO.buscas} pesquisas, erros: {len(erros)}")
     for e in erros[:10]:
         print("::warning::" + e[:300])
+    if TESTE and TESTE_SAIDA:
+        print("::notice::ITENS%0A" + "%0A".join(x.replace("%", "%25") for x in TESTE_SAIDA[:120]))
 
 if __name__ == "__main__":
     main()
