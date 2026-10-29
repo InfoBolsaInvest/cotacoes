@@ -811,8 +811,20 @@ def recomeca_do_zero():
     for snap in db().collection("ativos").stream():
         snap.reference.update({"portais_em": ""})
 
+def ja_rodou_hoje():
+    """O horario automatico do GitHub atrasa muito: se o despertador ja rodou este turno hoje, a rodada atrasada nao repete."""
+    if TESTE or os.environ.get("GITHUB_EVENT_NAME") != "schedule":
+        return False
+    s = db().collection("config").document("ultima_execucao").get()
+    d = s.to_dict() if s.exists else {}
+    feitos = d.get("turnos_do_dia") or {}
+    return feitos.get(TURNO) == AGORA.date().isoformat()
+
 def main():
     inicio = time.time()
+    if ja_rodou_hoje():
+        log(f"turno {TURNO} ja rodou hoje; rodada agendada atrasada ignorada")
+        return
     if os.environ.get("REPROCESSAR_RENDIMENTOS") == "1" and not TESTE:
         for snap in db().collection("noticias").where("tipo", "==", "Rendimento").stream():
             snap.reference.delete()
@@ -876,7 +888,9 @@ def main():
     # 2) portais (comeca pelos ativos buscados ha mais tempo, para revezar se o limite cortar)
     if BUSCAR_PORTAIS and not SO_RENDIMENTOS:
         estados = {t: estado_ativo(t) for t in ativos}
-        ordem = sorted(ativos, key=lambda t: estados[t].get("portais_em", ""))
+        limite_portais = (AGORA - dt.timedelta(hours=18)).isoformat(timespec="seconds")
+        ordem = sorted((t for t in ativos if estados[t].get("portais_em", "") < limite_portais),
+                       key=lambda t: estados[t].get("portais_em", ""))
         desde_portais = (AGORA.date() - dt.timedelta(days=2)).isoformat()
         for t in ordem:
             info = cadastro.get(t) or {"nome": t}
@@ -933,7 +947,14 @@ def main():
     log(json.dumps(reg, ensure_ascii=False, indent=1))
     if not TESTE:
         db().collection("execucoes").document(AGORA.strftime("%Y-%m-%d_%H%M")).set(reg)
-        db().collection("config").document("ultima_execucao").set(reg)
+        try:
+            s_ant = db().collection("config").document("ultima_execucao").get()
+            turnos = dict((s_ant.to_dict() or {}).get("turnos_do_dia") or {}) if s_ant.exists else {}
+        except Exception:
+            turnos = {}
+        if not SO_RENDIMENTOS:
+            turnos[TURNO] = AGORA.date().isoformat()
+        db().collection("config").document("ultima_execucao").set(dict(reg, turnos_do_dia=turnos))
     try:
         envia_alertas()
     except Exception as e:
