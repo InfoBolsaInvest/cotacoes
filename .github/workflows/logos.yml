@@ -21,6 +21,10 @@ jobs:
               echo "::warning::$t sem logo"; rm -f "logos/$t.svg"
             fi
           done
+          # Logo do BMG vem com fundo quase branco: usa a cor laranja da marca no fundo
+          if [ -f logos/BMGB4.svg ]; then
+            sed -i -e 's/#FA6300/#FFFFFF/g' -e 's/#462A71/#FFFFFF/g' -e 's/#F0F3FA/#FA6300/g' logos/BMGB4.svg
+          fi
       - name: Salva no repositório
         run: |
           git config user.name "cotacoes-bot"
