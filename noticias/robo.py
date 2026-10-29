@@ -249,6 +249,23 @@ def salva_estado_ativo(ticker, dados):
     if not TESTE:
         db().collection("ativos").document(ticker).set(dados, merge=True)
 
+FEED_MAX = 200
+CAMPOS_FEED = ("ticker", "tipo", "data", "titulo", "resumo", "link", "fonte", "importante", "motivo", "variacao")
+
+def atualiza_feed(cli, tickers):
+    itens = []
+    for i in range(0, len(tickers), 30):
+        q = db().collection("noticias").where("ticker", "in", tickers[i:i + 30])
+        for snap in q.stream():
+            d = snap.to_dict()
+            itens.append({k: d[k] for k in CAMPOS_FEED if k in d})
+    itens.sort(key=lambda x: (x.get("data") or ""), reverse=True)
+    db().collection("feeds").document(cli).set({
+        "atualizado": AGORA.isoformat(timespec="seconds"),
+        "tickers": tickers,
+        "itens_json": json.dumps(itens[:FEED_MAX], ensure_ascii=False),
+    })
+
 # ---------------------------------------------------------------- Telegram
 def avisa_telegram(item):
     tok, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
@@ -426,7 +443,7 @@ def rad_documentos(desde_iso):
 
 def fontes_acao(ticker, info, desde_iso, novos):
     docs = [d for d in rad_documentos(desde_iso) if d["cvm"] == info["cvm"] and d["categoria"] in CATEGORIAS_ACAO
-            and d["entrega"] and d["entrega"][:10] >= desde_iso]
+            and d["entrega"] and d["entrega"][:10] >= desde_iso and doc_acao_relevante(d)]
     ids = {id_doc("cvm", d["protocolo"]): d for d in docs}
     ja = ids_existentes(list(ids))
     for nid, d in ids.items():
@@ -460,6 +477,14 @@ def fontes_acao(ticker, info, desde_iso, novos):
                 "importante": bool(res.get("importante")), "motivo": res.get("motivo") or ""}
         if grava_noticia(nid, item):
             novos.append(item)
+
+def doc_acao_relevante(d):
+    a = (d["assunto"] + " " + d["tipo"]).lower()
+    if re.search(r"ingl[eê]s|english", a):
+        return False
+    if d["categoria"] == "Dados Econômico-Financeiros":
+        return bool(re.search(r"release|resultado", a)) and not re.search(r"apresenta", a)
+    return True
 
 # ---------------------------------------------------------------- portais
 def fontes_portais(ticker, info, desde_iso, novos):
@@ -531,7 +556,16 @@ def main():
                 erros.append(f"{t} portais: {e}")
                 traceback.print_exc()
 
-    # 3) avisos e registro
+    # 3) feed de cada cliente (um documento por cliente, lido pelo app)
+    if not TESTE:
+        for cli in CLIENTES:
+            try:
+                atualiza_feed(cli, sorted(t for t, cs in por_ativo.items() if cli in cs))
+            except Exception as e:
+                erros.append(f"feed {cli}: {e}")
+                traceback.print_exc()
+
+    # 4) avisos e registro
     importantes = [n for n in novos if n.get("importante")]
     for n in importantes:
         avisa_telegram(n)
