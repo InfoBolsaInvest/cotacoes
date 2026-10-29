@@ -15,6 +15,12 @@ on:
       janela:
         description: 'quantos dias para tras olhar'
         default: '3'
+      reset:
+        description: '1 = apaga as noticias e comeca do zero'
+        default: '0'
+      sem_aviso:
+        description: '1 = nao manda aviso no Telegram nesta rodada'
+        default: '0'
 concurrency:
   group: noticias
   cancel-in-progress: false
@@ -38,4 +44,6 @@ jobs:
           TURNO: ${{ inputs.turno }}
           TESTE: ${{ inputs.teste }}
           JANELA_DIAS: ${{ inputs.janela }}
+          RESET: ${{ inputs.reset }}
+          SEM_AVISO: ${{ inputs.sem_aviso }}
         run: python3 noticias/robo.py

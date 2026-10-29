@@ -28,6 +28,11 @@ LIMITE_USD = float(os.environ.get("LIMITE_USD") or "1.50")   # teto de gasto por
 JANELA_DIAS = int(os.environ.get("JANELA_DIAS") or "3")      # quantos dias para tras olhar
 PDF_MAX_BYTES = 12 * 1024 * 1024
 VARIACAO_RENDIMENTO = 0.15      # 15% ou mais de diferenca no rendimento vira destaque
+PORTAIS_CONFIAVEIS = ["infomoney.com.br", "valor.globo.com", "valorinveste.globo.com", "moneytimes.com.br",
+    "exame.com", "estadao.com.br", "einvestidor.estadao.com.br", "folha.uol.com.br", "g1.globo.com", "oglobo.globo.com",
+    "cnnbrasil.com.br", "seudinheiro.com", "bloomberglinea.com.br", "br.reuters.com", "reuters.com", "investnews.com.br",
+    "braziljournal.com", "istoedinheiro.com.br", "poder360.com.br", "suno.com.br", "fiis.com.br", "neofeed.com.br",
+    "agenciabrasil.ebc.com.br", "infomoney.com.br", "forbes.com.br", "veja.abril.com.br", "metropoles.com"]
 DOMINIOS_BLOQUEADOS = ["statusinvest.com.br", "investidor10.com.br", "fundamentus.com.br",
                        "clubefii.com.br", "br.tradingview.com", "br.investing.com",
                        "fundsexplorer.com.br", "fiis.com.br"]
@@ -126,7 +131,15 @@ REGRAS = """Regras de escrita (obrigatorias):
 - Nunca use travessao. Use virgula ou ponto.
 - Numeros no padrao brasileiro (200.000,00; R$ 1,25) e percentuais com 2 casas decimais (10,50%).
 - Nao fale de voce mesmo, nao cumprimente, nao use primeira pessoa.
-Marque "importante": true somente se o assunto for: corte ou aumento forte de dividendo ou rendimento, OPA (oferta publica de aquisicao), recuperacao judicial ou falencia, inadimplencia ou atraso de pagamento de devedores relevantes, nova emissao de cotas ou acoes, troca de gestor ou administrador, incorporacao, fusao ou liquidacao. Em "motivo" escreva em poucas palavras qual desses e (ou vazio)."""
+Marque "importante": true SOMENTE nestes casos, e em "motivo" use exatamente um destes textos:
+- "Corte de dividendo" ou "Aumento forte de dividendo": quando o proprio texto disser que o provento caiu ou subiu bastante em relacao ao anterior. Anuncio normal de dividendo NAO e importante.
+- "OPA": oferta publica de aquisicao de acoes ou cotas.
+- "Recuperação judicial": recuperacao judicial, extrajudicial ou falencia da empresa ou de devedor relevante do fundo.
+- "Inadimplência": atraso ou calote de devedores relevantes de um fundo.
+- "Emissão de cotas" ou "Emissão de ações": nova oferta de cotas ou de acoes. Emissao de divida (debentures, letras financeiras, CRI, CRA) NAO e importante.
+- "Troca de gestor": troca da gestora ou da administradora de um FUNDO. Troca de diretor, vice-presidente ou conselheiro de empresa NAO e importante.
+- "Incorporação ou fusão": incorporacao, fusao, cisao ou liquidacao do fundo ou da empresa.
+Em qualquer outro caso: "importante": false e "motivo": ""."""
 
 def _json_da_resposta(msg):
     txt = "".join(getattr(b, "text", "") for b in msg.content if getattr(b, "type", "") == "text")
@@ -153,12 +166,14 @@ Responda somente com JSON neste formato:
     CUSTO.soma(msg.usage)
     return _json_da_resposta(msg)
 
-def buscar_portais(ticker, info, desde_iso):
+def buscar_portais(ticker, info, desde_iso, ja_publicados=()):
     if not CUSTO.pode(0.06):
         return []
     nome = info.get("nome", ticker)
     prompt = f"""Pesquise noticias publicadas em portais de noticias desde {iso_para_br(desde_iso)} sobre {nome}, codigo de negociacao {ticker} na B3.
 Inclua SOMENTE noticias claramente sobre este ativo: o texto precisa citar o codigo {ticker} ou o nome exato "{nome}". Descarte qualquer coisa sobre outra empresa ou fundo com nome parecido, paginas de cotacao, foruns, listas genericas de "melhores ativos", conteudo patrocinado e materias anteriores a {iso_para_br(desde_iso)}.
+Assuntos que JA foram publicados sobre este ativo (nao traga noticia sobre o mesmo fato, mesmo de outro portal):
+{chr(10).join("- " + t for t in ja_publicados) or "- nenhum"}
 Se nao houver nada novo, devolva a lista vazia. No maximo 3 itens.
 
 {REGRAS}
@@ -166,7 +181,7 @@ Se nao houver nada novo, devolva a lista vazia. No maximo 3 itens.
 Responda somente com JSON neste formato:
 {{"itens": [{{"titulo": "titulo curto com suas palavras", "url": "link exato da materia", "fonte": "nome do portal", "data": "AAAA-MM-DD", "resumo": "2 ou 3 frases", "cita_ativo": "trecho curto da materia onde aparece {ticker} ou {nome}", "importante": false, "motivo": ""}}]}}"""
     tool = {"type": "web_search_20250305", "name": "web_search", "max_uses": 1,
-            "blocked_domains": DOMINIOS_BLOQUEADOS,
+            "allowed_domains": PORTAIS_CONFIAVEIS,
             "user_location": {"type": "approximate", "country": "BR", "timezone": "America/Sao_Paulo"}}
     msg = ia().messages.create(model=MODELO, max_tokens=1200, tools=[tool],
                                messages=[{"role": "user", "content": prompt}])
@@ -190,7 +205,8 @@ Responda somente com JSON neste formato:
         url = (it.get("url") or "").strip()
         if not url.startswith("http") or normaliza_url(url) not in reais:
             continue
-        if any(d in url for d in DOMINIOS_BLOQUEADOS):
+        host = urllib.parse.urlsplit(url).netloc.lower().removeprefix("www.")
+        if not any(host == d or host.endswith("." + d) for d in PORTAIS_CONFIAVEIS):
             continue
         cita = (it.get("cita_ativo", "") + " " + it.get("titulo", "") + " " + it.get("resumo", "")).lower()
         if ticker.lower() not in cita and nome.lower() not in cita and not any(c in cita for c in chaves):
@@ -480,6 +496,8 @@ def fontes_acao(ticker, info, desde_iso, novos):
 
 def doc_acao_relevante(d):
     a = (d["assunto"] + " " + d["tipo"]).lower()
+    if re.search(r"apresenta[cç][aã]o|teleconfer|webcast|per[ií]odo de sil[eê]ncio", a):
+        return False
     if re.search(r"ingl[eê]s|english", a):
         return False
     if d["categoria"] == "Dados Econômico-Financeiros":
@@ -487,12 +505,24 @@ def doc_acao_relevante(d):
     return True
 
 # ---------------------------------------------------------------- portais
+def titulos_recentes(ticker, dias=10):
+    if TESTE:
+        return []
+    lim = (AGORA.date() - dt.timedelta(days=dias)).isoformat()
+    out = []
+    for snap in db().collection("noticias").where("ticker", "==", ticker).stream():
+        d = snap.to_dict()
+        if (d.get("data") or "") >= lim:
+            out.append(d.get("titulo", ""))
+    return out[:25]
+
 def fontes_portais(ticker, info, desde_iso, novos):
-    itens = buscar_portais(ticker, info, desde_iso)
+    ja = titulos_recentes(ticker) + [n["titulo"] for n in novos if n["ticker"] == ticker]
+    itens = buscar_portais(ticker, info, desde_iso, ja)
     ids = {id_doc("web", normaliza_url(it["url"])): it for it in itens}
-    ja = ids_existentes(list(ids))
+    existentes = ids_existentes(list(ids))
     for nid, it in ids.items():
-        if nid in ja:
+        if nid in existentes:
             continue
         item = {"ticker": ticker, "tipo": "Notícia", "data": it["data"], "link": it["url"],
                 "fonte": (it.get("fonte") or urllib.parse.urlsplit(it["url"]).netloc.removeprefix("www."))[:60],
@@ -502,8 +532,24 @@ def fontes_portais(ticker, info, desde_iso, novos):
             novos.append(item)
 
 # ---------------------------------------------------------------- principal
+def recomeca_do_zero():
+    for col in ("noticias", "feeds"):
+        while True:
+            docs = list(db().collection(col).limit(400).stream())
+            if not docs:
+                break
+            lote = db().batch()
+            for d in docs:
+                lote.delete(d.reference)
+            lote.commit()
+    for snap in db().collection("ativos").stream():
+        snap.reference.update({"portais_em": ""})
+
 def main():
     inicio = time.time()
+    if os.environ.get("RESET") == "1" and not TESTE:
+        recomeca_do_zero()
+        log("base de noticias zerada")
     erros, novos = [], []
     cadastro = {k: v for k, v in json.load(open(os.path.join(AQUI, "ativos.json"), encoding="utf-8")).items()
                 if not k.startswith("_")}
@@ -567,8 +613,9 @@ def main():
 
     # 4) avisos e registro
     importantes = [n for n in novos if n.get("importante")]
-    for n in importantes:
-        avisa_telegram(n)
+    if os.environ.get("SEM_AVISO") != "1":
+        for n in importantes:
+            avisa_telegram(n)
     if CUSTO.parou_no_limite:
         erros.append(f"limite de US$ {br_num(LIMITE_USD)} atingido; os ativos restantes ficam para a proxima rodada")
     reg = {"inicio": AGORA.isoformat(timespec="seconds"), "turno": TURNO, "portais": BUSCAR_PORTAIS,
