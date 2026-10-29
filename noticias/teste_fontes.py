@@ -15,6 +15,6 @@ tests = {
 }
 for k,(u,d,h) in tests.items():
     try:
-        s,ct,b = get(u,d,h); print(k, s, ct, len(b), b[:100])
+        s,ct,b = get(u,d,h); print('::notice::'+' '.join(map(str,[k, s, ct, len(b), b[:60]])))
     except Exception as e:
-        print(k, 'ERRO', repr(e)[:200])
+        print('::notice::'+k+' ERRO '+repr(e)[:200])
