@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: inputs.apagar == '1'
-        run: curl -sf -X DELETE -H "Authorization: Bearer ${{ github.token }}" "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/previa"
+        run: |
+          curl -sf -X DELETE -H "Authorization: Bearer ${{ github.token }}" "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/previa"
       - if: inputs.apagar != '1'
         run: |
           mkdir p && cd p && git init -q -b previa
