@@ -1,0 +1,41 @@
+name: Noticias dos ativos
+on:
+  schedule:
+    # 7h30 e 19h de Brasilia (10:30 e 22:00 UTC), todos os dias
+    - cron: '30 10 * * *'
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      turno:
+        description: 'manha (com portais) ou noite (so oficiais)'
+        default: 'manha'
+      teste:
+        description: '1 = so mostra, nao grava nem avisa'
+        default: '0'
+      janela:
+        description: 'quantos dias para tras olhar'
+        default: '3'
+concurrency:
+  group: noticias
+  cancel-in-progress: false
+jobs:
+  noticias:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q anthropic firebase-admin
+      - name: Busca noticias
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LIMITE_USD: ${{ vars.NOTICIAS_LIMITE_USD }}
+          TURNO: ${{ inputs.turno }}
+          TESTE: ${{ inputs.teste }}
+          JANELA_DIAS: ${{ inputs.janela }}
+        run: python3 noticias/robo.py
