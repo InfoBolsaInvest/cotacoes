@@ -412,12 +412,12 @@ def rad_documentos(desde_iso):
         f = rec.split("$&")
         if len(f) < 11:
             continue
-        m = re.match(r"\s*0*(\d+)-\d", f[0])
+        cod = re.sub(r"\D", "", f[0])
         dl = re.search(r"OpenDownloadDocumentos\('(\d+)','(\d+)','(\d+)','IPE'\)", rec)
-        if not m or not dl:
+        if not cod or not dl:
             continue
         assunto = re.sub(r"</?spanOrder>", "", f[4]).strip(" -")
-        docs.append({"cvm": int(m.group(1)), "empresa": f[1].strip(), "categoria": f[2].strip(),
+        docs.append({"cvm": int(cod), "empresa": f[1].strip(), "categoria": f[2].strip(),
                      "tipo": f[3].strip(), "assunto": html.unescape(assunto),
                      "entrega": data_br_para_iso(re.sub(r"<[^>]+>\d*</spanOrder>", "", f[6])),
                      "seq": dl.group(1), "versao": dl.group(2), "protocolo": dl.group(3)})
