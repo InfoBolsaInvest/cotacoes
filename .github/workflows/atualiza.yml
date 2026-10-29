@@ -33,16 +33,17 @@ jobs:
             sleep $((i * 5)); git pull -q --rebase -X theirs || git pull -q --rebase
           done
           exit 1
-      - name: Avisa no Telegram na primeira falha
+      - name: Avisa no Telegram quando falha duas vezes seguidas
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          ANT=$(gh api "repos/${{ github.repository }}/actions/workflows/atualiza.yml/runs?status=completed&per_page=1" --jq '.workflow_runs[0].conclusion' || echo success)
-          if [ "$ANT" != "failure" ]; then
+          # uma falha isolada (site da B3 fora por alguns minutos) nao avisa; a segunda seguida avisa, uma vez so
+          ANT=$(gh api "repos/${{ github.repository }}/actions/workflows/atualiza.yml/runs?status=completed&per_page=2" --jq '[.workflow_runs[].conclusion] | join(",")' || echo "success,success")
+          if [ "${ANT%%,*}" = "failure" ] && [ "${ANT#*,}" != "failure" ]; then
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
               --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
-              --data-urlencode "text=⚠️ O robô de cotações automáticas falhou ($(TZ=America/Sao_Paulo date +'%d/%m %H:%M')). Mande esta mensagem para o Claude (no chat da carteira do Flávio) que ele resolve. Rodada: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
+              --data-urlencode "text=⚠️ O robô de cotações automáticas falhou duas vezes seguidas ($(TZ=America/Sao_Paulo date +'%d/%m %H:%M')). Mande esta mensagem para o Claude (no chat da carteira do Flávio) que ele resolve. Rodada: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
           fi
