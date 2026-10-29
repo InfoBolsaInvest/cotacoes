@@ -2,6 +2,13 @@ name: Logos das empresas
 
 on:
   workflow_dispatch:
+    inputs:
+      tickers:
+        description: 'acoes separadas por espaco (ex.: TAEE11 RECV3); vazio = todas as acoes do ativos.json'
+        default: ''
+      forcar:
+        description: '1 = baixa de novo mesmo se o logo ja existir'
+        default: '0'
 
 permissions:
   contents: write
@@ -13,21 +20,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Baixa os logos
         run: |
-          mkdir -p logos
-          for t in $(python3 -c "import json;d=json.load(open('noticias/ativos.json'));print(' '.join(k for k,v in d.items() if isinstance(v,dict) and v.get('tipo')=='acao'))"); do
-            if curl -sfL -o "logos/$t.svg" "https://icons.brapi.dev/icons/$t.svg"; then
-              echo "::notice::$t $(wc -c < logos/$t.svg) bytes"
-            else
-              echo "::warning::$t sem logo"; rm -f "logos/$t.svg"
-            fi
-          done
-          # Logo do BMG vem com fundo quase branco: usa a cor laranja da marca no fundo
-          if [ -f logos/BMGB4.svg ]; then
-            sed -i -e 's/#FA6300/#FFFFFF/g' -e 's/#462A71/#FFFFFF/g' -e 's/#F0F3FA/#FA6300/g' logos/BMGB4.svg
+          T="${{ inputs.tickers }}"
+          if [ -z "$T" ]; then
+            T=$(python3 -c "import json;d=json.load(open('noticias/ativos.json'));print(' '.join(k for k,v in d.items() if isinstance(v,dict) and v.get('tipo')=='acao'))")
           fi
+          if [ "${{ inputs.forcar }}" = "1" ]; then python3 noticias/logos.py --forcar $T; else python3 noticias/logos.py $T; fi
       - name: Salva no repositório
         run: |
           git config user.name "cotacoes-bot"
           git config user.email "cotacoes-bot@users.noreply.github.com"
           git add logos
-          git diff --cached --quiet || (git commit -m "Logos das empresas" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Logos das empresas"
+          for i in 1 2 3 4 5; do git pull -q --rebase && git push -q && exit 0; sleep $((i * 5)); done
+          exit 1
