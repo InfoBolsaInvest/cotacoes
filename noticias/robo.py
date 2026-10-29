@@ -218,7 +218,7 @@ devolva "proventos": [] e use titulo e resumo que descrevam o que o documento re
 Responda somente com JSON neste formato:
 {{"titulo": "titulo curto, ate 70 caracteres", "resumo": "1 frase curta dizendo o que foi aprovado (sem repetir valores e datas)", "importante": false, "motivo": "",
  "proventos": [{{"tipo": "Dividendo ou JCP", "valor_bruto": 0.0, "valor_liquido": null, "data_com": "AAAA-MM-DD", "pagamento": "AAAA-MM-DD"}}]}}"""}]
-    msg = ia().messages.create(model=MODELO, max_tokens=600, temperature=0, messages=[{"role": "user", "content": conteudo}])
+    msg = ia().messages.create(model=MODELO, max_tokens=600, messages=[{"role": "user", "content": conteudo}])
     CUSTO.soma(msg.usage)
     return _json_da_resposta(msg)
 
