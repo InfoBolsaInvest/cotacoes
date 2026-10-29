@@ -202,6 +202,9 @@ def extrair_proventos(ticker, nome, assunto, pdf_bytes):
 Se o documento tiver valores diferentes por especie de acao, use os da {classe}.
 Para JCP, informe o valor bruto e, se o documento trouxer, o valor liquido para pessoa fisica (se nao trouxer, use null).
 Datas no formato AAAA-MM-DD. "data_com" e o ultimo dia para ter a acao e receber. Se o pagamento ainda nao tiver data, use null.
+So liste proventos que ESTE documento esta anunciando ou aprovando, com valor por acao. Se o documento so traz orientacoes
+(tributacao, investidor nao residente, cadastro, agenda) ou apenas lembra um provento ja anunciado em outro documento,
+devolva "proventos": [] e use titulo e resumo que descrevam o que o documento realmente informa.
 
 {REGRAS}
 
@@ -402,7 +405,13 @@ def fnet_rendimento(doc_id):
             "data_base": base.group(1) if base else "", "pagamento": pag.group(1) if pag else ""}
 
 def fontes_fii(ticker, info, desde_iso, novos):
-    docs = fnet_lista(info["cnpj"])
+    todos = fnet_lista(info["cnpj"])
+    # documento reapresentado fica inativo: some do app e nao entra em comparacao
+    inativos = [id_doc("fnet", d["id"]) for d in todos if (d.get("situacaoDocumento") or "A") != "A"]
+    if inativos and not TESTE:
+        for nid in ids_existentes(inativos):
+            db().collection("noticias").document(nid).delete()
+    docs = [d for d in todos if (d.get("situacaoDocumento") or "A") == "A"]
     candidatos = []
     for d in docs:
         cat = (d.get("categoriaDocumento") or "").strip()
@@ -541,7 +550,7 @@ def fontes_acao(ticker, info, desde_iso, novos):
         if SO_RENDIMENTOS and tipo != "Rendimento":
             continue
         link = RAD + "frmExibirArquivoIPEExterno.aspx?NumeroProtocoloEntrega=" + d["protocolo"]
-        pdf = None
+        pdf, falhou = None, False
         try:
             corpo, _ = http(RAD + "frmDownloadDocumento.aspx?Tela=ext&numSequencia=" + d["seq"] + "&numVersao=" +
                             d["versao"] + "&numProtocolo=" + d["protocolo"] + "&descTipo=IPE&CodigoInstituicao=1")
@@ -549,6 +558,7 @@ def fontes_acao(ticker, info, desde_iso, novos):
                 pdf = corpo
         except Exception as e:
             log("  pdf cvm falhou", d["protocolo"], e)
+            falhou = True
         res = None
         if pdf:
             try:
@@ -558,6 +568,11 @@ def fontes_acao(ticker, info, desde_iso, novos):
                     res = resumir_documento(ticker, info["nome"], d["categoria"], d["assunto"] or d["tipo"], pdf)
             except Exception as e:
                 log("  IA falhou", ticker, d["protocolo"], e)
+                falhou = True
+        if falhou or (pdf and not res):
+            continue   # tenta de novo na proxima rodada
+        if tipo == "Rendimento" and res and not res.get("proventos"):
+            log("  sem valores de provento", ticker, d["protocolo"])
         if not res:
             res = {"titulo": d["assunto"] or d["categoria"], "resumo":
                    f"{info['nome']} publicou um documento oficial na CVM ({d['categoria'].lower()}). "
@@ -566,8 +581,10 @@ def fontes_acao(ticker, info, desde_iso, novos):
                 "origem": "oficial", "titulo": res.get("titulo") or d["categoria"], "resumo": res.get("resumo") or "",
                 "importante": bool(res.get("importante")), "motivo": res.get("motivo") or ""}
         provs = [completa_provento(ticker, p) for p in (res.get("proventos") or []) if p.get("valor_bruto")]
-        if provs:
+        if provs and any(p["data_com"] for p in provs):
             item["proventos"] = provs
+        elif tipo == "Rendimento":
+            item["tipo"] = "Comunicado"   # aviso sobre provento ja anunciado, sem valor novo
         if grava_noticia(nid, item):
             novos.append(item)
 
