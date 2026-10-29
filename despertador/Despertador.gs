@@ -6,7 +6,7 @@ const REPO = 'InfoBolsaInvest/cotacoes';
 const FUSO = 'America/Sao_Paulo';
 
 function chama(robo, entradas) {
-  const chave = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  const chave = (PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN') || '').replace(/\s/g, '');
   if (!chave) throw new Error('Falta a propriedade GITHUB_TOKEN nas configurações do projeto.');
   const r = UrlFetchApp.fetch('https://api.github.com/repos/' + REPO + '/actions/workflows/' + robo + '/dispatches', {
     method: 'post',
