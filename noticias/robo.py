@@ -29,8 +29,8 @@ JANELA_DIAS = int(os.environ.get("JANELA_DIAS") or "3")      # quantos dias para
 PDF_MAX_BYTES = 12 * 1024 * 1024
 VARIACAO_RENDIMENTO = 0.15      # 15% ou mais de diferenca no rendimento vira destaque
 PORTAIS_CONFIAVEIS = ["infomoney.com.br", "valor.globo.com", "valorinveste.globo.com", "moneytimes.com.br",
-    "exame.com", "estadao.com.br", "einvestidor.estadao.com.br", "folha.uol.com.br", "g1.globo.com", "oglobo.globo.com",
-    "cnnbrasil.com.br", "seudinheiro.com", "bloomberglinea.com.br", "br.reuters.com", "reuters.com", "investnews.com.br",
+    "exame.com", "einvestidor.estadao.com.br", "folha.uol.com.br", "g1.globo.com", "oglobo.globo.com",
+    "cnnbrasil.com.br", "seudinheiro.com", "bloomberglinea.com.br", "br.reuters.com", "investnews.com.br",
     "braziljournal.com", "istoedinheiro.com.br", "poder360.com.br", "suno.com.br", "fiis.com.br", "neofeed.com.br",
     "agenciabrasil.ebc.com.br", "forbes.com.br", "veja.abril.com.br", "metropoles.com"]
 DOMINIOS_BLOQUEADOS = ["statusinvest.com.br", "investidor10.com.br", "fundamentus.com.br",
