@@ -18,6 +18,9 @@ on:
       reset:
         description: '1 = apaga as noticias e comeca do zero'
         default: '0'
+      reprocessar:
+        description: '1 = refaz os itens de rendimento'
+        default: '0'
       sem_aviso:
         description: '1 = nao manda aviso no Telegram nesta rodada'
         default: '0'
@@ -46,4 +49,5 @@ jobs:
           JANELA_DIAS: ${{ inputs.janela }}
           RESET: ${{ inputs.reset }}
           SEM_AVISO: ${{ inputs.sem_aviso }}
+          REPROCESSAR_RENDIMENTOS: ${{ inputs.reprocessar }}
         run: python3 noticias/robo.py

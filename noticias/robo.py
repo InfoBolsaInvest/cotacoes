@@ -27,7 +27,31 @@ PRECO_BUSCA = 10.00 / 1000      # US$ por pesquisa na web
 LIMITE_USD = float(os.environ.get("LIMITE_USD") or "1.50")   # teto de gasto por rodada
 JANELA_DIAS = int(os.environ.get("JANELA_DIAS") or "3")      # quantos dias para tras olhar
 PDF_MAX_BYTES = 12 * 1024 * 1024
-VARIACAO_RENDIMENTO = 0.15      # 15% ou mais de diferenca no rendimento vira destaque
+VARIACAO_RENDIMENTO = 0.15
+IR_JCP = 0.175                  # IRRF sobre JCP para pessoa fisica desde 01/01/2026 (LC 224/2025)
+try:
+    _COT = json.load(open(os.path.join(AQUI, "..", "cotacoes.json"), encoding="utf-8")).get("ativos", {})
+except Exception:
+    _COT = {}
+
+def preco_ref(ticker):
+    q = _COT.get(ticker) or {}
+    return q.get("preco") if (q.get("preco") or 0) > 0 else None
+
+def completa_provento(ticker, p):
+    """Padroniza um provento: valor liquido do JCP, DY do pagamento pelo preco do dia."""
+    tipo = "JCP" if "jcp" in (p.get("tipo") or "").lower() or "juros" in (p.get("tipo") or "").lower() else (p.get("tipo") or "Dividendo")
+    bruto = float(p.get("valor_bruto") or 0)
+    liq = p.get("valor_liquido")
+    liq = float(liq) if liq not in (None, "", 0) else (round(bruto * (1 - IR_JCP), 8) if tipo == "JCP" else bruto)
+    out = {"tipo": tipo, "valor_bruto": bruto, "valor_liquido": liq,
+           "liquido_estimado": tipo == "JCP" and not p.get("valor_liquido"),
+           "data_com": (p.get("data_com") or "")[:10], "pagamento": (p.get("pagamento") or "")[:10]}
+    pr = preco_ref(ticker)
+    if pr and bruto > 0:
+        out["preco_ref"] = pr
+        out["dy"] = round(100 * bruto / pr, 2)
+    return out      # 15% ou mais de diferenca no rendimento vira destaque
 PORTAIS_CONFIAVEIS = ["infomoney.com.br", "valor.globo.com", "valorinveste.globo.com", "moneytimes.com.br",
     "exame.com", "einvestidor.estadao.com.br", "folha.uol.com.br", "g1.globo.com", "oglobo.globo.com",
     "cnnbrasil.com.br", "seudinheiro.com", "bloomberglinea.com.br", "br.reuters.com", "investnews.com.br",
@@ -166,6 +190,27 @@ Responda somente com JSON neste formato:
     CUSTO.soma(msg.usage)
     return _json_da_resposta(msg)
 
+def extrair_proventos(ticker, nome, assunto, pdf_bytes):
+    if not CUSTO.pode(0.05):
+        return None
+    classe = {"3": "ordinaria (ON)", "4": "preferencial (PN)", "5": "preferencial classe A (PNA)",
+              "6": "preferencial classe B (PNB)", "11": "unit"}.get(re.sub(r"^[A-Z]+", "", ticker), "")
+    conteudo = [{"type": "document", "source": {"type": "base64", "media_type": "application/pdf",
+                                                 "data": base64.b64encode(pdf_bytes).decode()}},
+                {"type": "text", "text": f"""Aviso de proventos de {nome}. Extraia os proventos da acao {ticker} ({classe}).
+Se o documento tiver valores diferentes por especie de acao, use os da {classe}.
+Para JCP, informe o valor bruto e, se o documento trouxer, o valor liquido para pessoa fisica (se nao trouxer, use null).
+Datas no formato AAAA-MM-DD. "data_com" e o ultimo dia para ter a acao e receber. Se o pagamento ainda nao tiver data, use null.
+
+{REGRAS}
+
+Responda somente com JSON neste formato:
+{{"titulo": "titulo curto, ate 70 caracteres", "resumo": "1 frase curta dizendo o que foi aprovado (sem repetir valores e datas)", "importante": false, "motivo": "",
+ "proventos": [{{"tipo": "Dividendo ou JCP", "valor_bruto": 0.0, "valor_liquido": null, "data_com": "AAAA-MM-DD", "pagamento": "AAAA-MM-DD"}}]}}"""}]
+    msg = ia().messages.create(model=MODELO, max_tokens=600, messages=[{"role": "user", "content": conteudo}])
+    CUSTO.soma(msg.usage)
+    return _json_da_resposta(msg)
+
 OPINIAO = re.compile(r"pre[cç]o[- ]alvo|recomenda[cç][aã]o|potencial de (alta|valoriza)|carteira recomendada|rating de compra", re.I)
 
 def limpa_opiniao():
@@ -282,7 +327,7 @@ def salva_estado_ativo(ticker, dados):
         db().collection("ativos").document(ticker).set(dados, merge=True)
 
 FEED_MAX = 200
-CAMPOS_FEED = ("ticker", "tipo", "data", "titulo", "resumo", "link", "fonte", "importante", "motivo", "variacao")
+CAMPOS_FEED = ("ticker", "tipo", "data", "titulo", "resumo", "link", "fonte", "importante", "motivo", "variacao", "proventos")
 
 def atualiza_feed(cli, tickers):
     itens = []
@@ -407,6 +452,10 @@ def fontes_fii(ticker, info, desde_iso, novos):
             item["resumo"] = (f"O fundo vai pagar R$ {br_valor_unit(r['valor'])} por cota em {r['pagamento']}, "
                               f"para quem tinha cotas no fim do dia {r['data_base']}." + comp)
             item["valor"] = r["valor"]
+            item["proventos"] = [completa_provento(ticker, {"tipo": "Rendimento", "valor_bruto": r["valor"],
+                                 "valor_liquido": r["valor"], "data_com": data_br_para_iso(r["data_base"]) or "",
+                                 "pagamento": data_br_para_iso(r["pagamento"]) or ""})]
+            item["resumo"] = "Rendimento mensal do fundo, isento de imposto de renda para pessoa física." + comp
         else:
             assunto = (d.get("tipoDocumento") or "").strip()
             pdf = None
@@ -497,7 +546,10 @@ def fontes_acao(ticker, info, desde_iso, novos):
         res = None
         if pdf:
             try:
-                res = resumir_documento(ticker, info["nome"], d["categoria"], d["assunto"] or d["tipo"], pdf)
+                if tipo == "Rendimento":
+                    res = extrair_proventos(ticker, info["nome"], d["assunto"] or d["tipo"], pdf)
+                else:
+                    res = resumir_documento(ticker, info["nome"], d["categoria"], d["assunto"] or d["tipo"], pdf)
             except Exception as e:
                 log("  IA falhou", ticker, d["protocolo"], e)
         if not res:
@@ -507,6 +559,9 @@ def fontes_acao(ticker, info, desde_iso, novos):
         item = {"ticker": ticker, "tipo": tipo, "data": d["entrega"], "link": link, "fonte": "CVM",
                 "origem": "oficial", "titulo": res.get("titulo") or d["categoria"], "resumo": res.get("resumo") or "",
                 "importante": bool(res.get("importante")), "motivo": res.get("motivo") or ""}
+        provs = [completa_provento(ticker, p) for p in (res.get("proventos") or []) if p.get("valor_bruto")]
+        if provs:
+            item["proventos"] = provs
         if grava_noticia(nid, item):
             novos.append(item)
 
@@ -563,6 +618,10 @@ def recomeca_do_zero():
 
 def main():
     inicio = time.time()
+    if os.environ.get("REPROCESSAR_RENDIMENTOS") == "1" and not TESTE:
+        for snap in db().collection("noticias").where("tipo", "==", "Rendimento").stream():
+            snap.reference.delete()
+        log("rendimentos apagados para reprocessar")
     if os.environ.get("RESET") == "1" and not TESTE:
         recomeca_do_zero()
         log("base de noticias zerada")
