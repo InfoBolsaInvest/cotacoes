@@ -24,6 +24,12 @@ on:
       sem_aviso:
         description: '1 = nao manda aviso no Telegram nesta rodada'
         default: '0'
+      cadastro_teste:
+        description: 'so com teste=1: tickers separados por virgula para testar o cadastro automatico'
+        default: ''
+permissions:
+  contents: write
+  actions: read
 concurrency:
   group: noticias
   cancel-in-progress: false
@@ -50,4 +56,33 @@ jobs:
           RESET: ${{ inputs.reset }}
           SEM_AVISO: ${{ inputs.sem_aviso }}
           REPROCESSAR_RENDIMENTOS: ${{ inputs.reprocessar }}
+          CADASTRO_TESTE: ${{ inputs.cadastro_teste }}
         run: python3 noticias/robo.py
+      - name: Logos de empresas novas
+        if: hashFiles('logos_faltando.txt') != ''
+        run: |
+          mkdir -p logos
+          for t in $(cat logos_faltando.txt); do
+            if curl -sfL -o "logos/$t.svg" "https://icons.brapi.dev/icons/$t.svg"; then
+              # logo com fundo claro fica de fora (o app mostra o quadrado com a cor do ativo)
+              python3 -c "
+          import re,sys
+          s=open('logos/$t.svg').read(); m=re.search(r'fill=\"#([0-9A-Fa-f]{6})\"',s)
+          c=m.group(1) if m else 'FFFFFF'; r,g,b=(int(c[i:i+2],16) for i in (0,2,4))
+          sys.exit(1 if (0.299*r+0.587*g+0.114*b)/255>0.85 else 0)" || rm -f "logos/$t.svg"
+            fi
+          done
+          rm -f logos_faltando.txt
+          git config user.name "cotacoes-bot"
+          git config user.email "cotacoes-bot@users.noreply.github.com"
+          git add logos
+          git diff --cached --quiet || (git commit -m "Logos de empresas novas" && git pull --rebase -q && git push)
+      - name: Avisa no Telegram se a rodada quebrou
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=⚠️ O robô de notícias parou com erro nesta rodada ($(TZ=America/Sao_Paulo date +'%d/%m %H:%M')). Mande esta mensagem para o Claude (no chat da carteira do Flávio) que ele resolve. Rodada: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null

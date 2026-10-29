@@ -67,6 +67,14 @@ BUSCAR_PORTAIS = os.environ.get("PORTAIS", "auto")
 BUSCAR_PORTAIS = (TURNO == "manha") if BUSCAR_PORTAIS == "auto" else BUSCAR_PORTAIS == "1"
 TESTE = os.environ.get("TESTE") == "1"   # nao grava nada, so mostra
 SO_RENDIMENTOS = os.environ.get("REPROCESSAR_RENDIMENTOS") == "1"   # refaz so os proventos
+ALERTAS = []      # (chave, texto, imediato): problemas para avisar o Douglas no Telegram
+INFORMES = []     # avisos sem problema (ex.: ativo novo cadastrado sozinho)
+FALHAS_IA = []
+CHECOU_FECHAMENTO = False
+
+def alerta(chave, texto, imediato=False):
+    """imediato=False: so avisa se o problema se repetir na rodada seguinte (evita aviso por instabilidade passageira)."""
+    ALERTAS.append((re.sub(r"\d+", "#", chave)[:90], texto, imediato))
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; InfoBolsa-noticias/1.0)"}
 
@@ -353,6 +361,17 @@ def atualiza_feed(cli, tickers):
     })
 
 # ---------------------------------------------------------------- Telegram
+def telegram(texto):
+    tok, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if TESTE or not tok or not chat:
+        log("  [telegram]", texto[:500])
+        return
+    try:
+        http(f"https://api.telegram.org/bot{tok}/sendMessage",
+             data=urllib.parse.urlencode({"chat_id": chat, "text": texto[:3900], "disable_web_page_preview": "true"}).encode())
+    except Exception as e:
+        log("  telegram falhou:", e)
+
 def avisa_telegram(item):
     tok, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if not tok or not chat:
@@ -488,6 +507,7 @@ def fontes_fii(ticker, info, desde_iso, novos):
                     res = resumir_documento(ticker, info["nome"], cat, assunto, pdf)
                 except Exception as e:
                     log("  IA falhou", ticker, d["id"], e)
+                    FALHAS_IA.append(f"{ticker}: {e}")
             if not res:
                 res = {"titulo": tipo if not assunto else assunto, "resumo":
                        f"{info['nome']} publicou um documento oficial ({cat.lower()}"
@@ -572,6 +592,7 @@ def fontes_acao(ticker, info, desde_iso, novos):
                     res = resumir_documento(ticker, info["nome"], d["categoria"], d["assunto"] or d["tipo"], pdf)
             except Exception as e:
                 log("  IA falhou", ticker, d["protocolo"], e)
+                FALHAS_IA.append(f"{ticker}: {e}")
                 falhou = True
         if falhou or (pdf and not res):
             continue   # tenta de novo na proxima rodada
@@ -629,6 +650,153 @@ def fontes_portais(ticker, info, desde_iso, novos):
         if grava_noticia(nid, item):
             novos.append(item)
 
+# ---------------------------------------------------------------- cadastro automatico de ativo novo
+def _b3(url_base, params):
+    q = base64.b64encode(json.dumps(params).encode()).decode()
+    corpo, _ = http(url_base + q)
+    return json.loads(corpo or b"{}")
+
+def cadastra_acao(ticker):
+    raiz = re.sub(r"\d+$", "", ticker)
+    d = _b3("https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall/GetInitialCompanies/",
+            {"language": "pt-br", "pageNumber": 1, "pageSize": 20, "company": raiz})
+    for r in d.get("results") or []:
+        if (r.get("issuingCompany") or "").upper() == raiz and r.get("codeCVM") and not (r.get("typeBDR") or "").strip():
+            nome = (r.get("tradingName") or r.get("companyName") or ticker).strip().title()
+            return {"tipo": "acao", "cvm": int(r["codeCVM"]), "nome": nome, "busca": f"{nome} {ticker}"}
+    return None
+
+def cadastra_fundo(ticker):
+    """Acha o CNPJ com uma pesquisa curta e so aceita se o Fundos.NET confirmar que o fundo e desse codigo."""
+    if not CUSTO.pode(0.04):
+        return None
+    msg = ia().messages.create(model=MODELO, max_tokens=300, tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 2}],
+        messages=[{"role": "user", "content": f"Qual e o CNPJ do fundo (FII, Fiagro ou ETF) negociado na B3 com o codigo {ticker}? "
+                   'Responda somente com JSON: {"cnpj": "so numeros", "nome": "nome curto do fundo", "tipo": "FII, Fiagro ou ETF"}. '
+                   'Se nao tiver certeza, use cnpj vazio.'}])
+    CUSTO.soma(msg.usage)
+    r = _json_da_resposta(msg)
+    cnpj = re.sub(r"\D", "", r.get("cnpj") or "")
+    if len(cnpj) != 14 or "etf" in (r.get("tipo") or "").lower():
+        return None
+    docs = fnet_lista(cnpj, 40)
+    raiz = re.sub(r"\d+$", "", ticker)
+    ok = any(re.search(r"\b" + raiz + r"\b", ((x.get("nomePregao") or "") + " " + (x.get("informacoesAdicionais") or "")).upper()) for x in docs)
+    if not ok:
+        for x in docs:
+            if (x.get("categoriaDocumento") or "").strip() == "Aviso aos Cotistas - Estruturado":
+                corpo, _ = http(FNET + "exibirDocumento?id=" + str(x["id"]))
+                ok = ticker in corpo.decode("utf-8", "replace").upper()
+                break
+    if not ok:
+        return None
+    nome = (r.get("nome") or ticker).strip()
+    return {"tipo": "fii", "cnpj": cnpj, "nome": nome, "busca": f"{ticker} {nome}"}
+
+def cadastro_salvo():
+    if TESTE:
+        return {}
+    return {s.id: s.to_dict() for s in db().collection("cadastro").stream()}
+
+def cadastra_novos(sem_cadastro, cadastro):
+    for t in sem_cadastro:
+        info = None
+        try:
+            info = cadastra_acao(t)
+            if not info:
+                info = cadastra_fundo(t)
+        except Exception as e:
+            log("  cadastro automatico falhou", t, e)
+            alerta("cadastro " + t, f"Não consegui cadastrar sozinho o ativo novo {t} (erro: {str(e)[:120]}). Vou tentar de novo na próxima rodada.")
+            continue
+        if info:
+            cadastro[t] = info
+            INFORMES.append(f"Ativo novo na carteira: {t} ({info['nome']}). Já cadastrei e vou acompanhar os documentos oficiais dele.")
+        else:
+            info = {"tipo": "sem_oficial", "nome": t, "busca": t}
+            cadastro[t] = info
+            INFORMES.append(f"Ativo novo na carteira: {t}. Não achei documentos oficiais para ele (pode ser ETF, BDR ou um fundo diferente), "
+                            "então ele fica só com as notícias dos portais. Se ele for importante, fale com o Claude.")
+        if not TESTE:
+            db().collection("cadastro").document(t).set(dict(info, criado_em=AGORA.isoformat(timespec="seconds")))
+
+def logos_faltando(cadastro, ativos):
+    pasta = os.path.join(AQUI, "..", "logos")
+    falta = [t for t in ativos if (cadastro.get(t) or {}).get("tipo") == "acao" and not os.path.exists(os.path.join(pasta, t + ".svg"))]
+    if falta and not TESTE:
+        open(os.path.join(AQUI, "..", "logos_faltando.txt"), "w").write("\n".join(falta) + "\n")
+
+# ---------------------------------------------------------------- verificacoes de saude
+def confere_cotacoes():
+    try:
+        c = json.load(open(os.path.join(AQUI, "..", "cotacoes.json"), encoding="utf-8"))
+    except Exception as e:
+        alerta("cotacoes arquivo", f"Não consegui ler o arquivo de cotações automáticas ({e}).", True)
+        return
+    falhas = c.get("falhas") or []
+    if falhas:
+        mot = c.get("motivos") or {}
+        alerta("cotacoes falhas " + ",".join(sorted(falhas)),
+               "Cotações automáticas: não consegui o preço de " + ", ".join(falhas) + ". Motivo: "
+               + "; ".join(f"{t}: {mot.get(t, '?')}" for t in falhas[:5]))
+    global CHECOU_FECHAMENTO
+    hoje = AGORA.date().isoformat()
+    ult = c.get("atualizado") or ""
+    CHECOU_FECHAMENTO = AGORA.weekday() < 5 and AGORA.hour >= 19
+    if CHECOU_FECHAMENTO and (ult[:10] != hoje or ult[11:16] < "17:30"):
+        quando = f"{ult[8:10]}/{ult[5:7]} às {ult[11:13]}h{ult[14:16]}" if ult else "nunca"
+        alerta("cotacoes paradas", f"As cotações automáticas dos apps não atualizaram até o fechamento de hoje. "
+               f"A última atualização foi em {quando}. (Se hoje foi feriado na B3, pode ignorar.)", True)
+
+def confere_intervalo():
+    if TESTE:
+        return
+    s = db().collection("config").document("ultima_execucao").get()
+    if not s.exists:
+        return
+    ant = (s.to_dict() or {}).get("inicio") or ""
+    try:
+        horas = (AGORA - dt.datetime.fromisoformat(ant)).total_seconds() / 3600
+    except Exception:
+        return
+    if horas > 14:
+        alerta("intervalo", f"O robô de notícias ficou {br_num(horas, 0)} horas sem rodar (a última rodada antes desta foi em "
+               f"{ant[8:10]}/{ant[5:7]} às {ant[11:13]}h{ant[14:16]}). Ele deveria rodar às 7h30 e às 19h.", True)
+
+ERRO_GRAVE = re.compile(r"credit|billing|balance|authentication|unauthorized|permission|invalid x-api-key|401|403", re.I)
+
+def envia_alertas():
+    if INFORMES:
+        telegram("ℹ️ Robô de notícias\n\n" + "\n\n".join("• " + i for i in INFORMES))
+    if TESTE:
+        for a in ALERTAS:
+            log("  [alerta]", a)
+        return
+    ref = db().collection("config").document("alertas")
+    snap = ref.get()
+    st = snap.to_dict() if snap.exists else {}
+    cont_ant, enviados = st.get("contagem") or {}, st.get("enviados") or {}
+    cont, msgs = {}, []
+    for chave, texto, imediato in ALERTAS:
+        n = cont_ant.get(chave, 0) + 1
+        cont[chave] = n
+        if not imediato and n < 2:
+            continue
+        ult = (enviados.get(chave) or {}).get("em", "")
+        if ult and (AGORA - dt.datetime.fromisoformat(ult)).total_seconds() < 20 * 3600:
+            continue
+        msgs.append(texto)
+        enviados[chave] = {"em": AGORA.isoformat(timespec="seconds"), "texto": texto[:200]}
+    resolvidos = [k for k in list(enviados) if k not in cont and (k != "cotacoes paradas" or CHECOU_FECHAMENTO)]
+    for k in resolvidos:
+        msgs.append("✅ Normalizou: " + enviados.pop(k)["texto"])
+    if msgs:
+        probs = [m for m in msgs if not m.startswith("✅")]
+        cab = "⚠️ Robô de notícias: algo fora do esperado" if probs else "✅ Robô de notícias"
+        rod = "\n\nMande esta mensagem para o Claude (no chat da carteira do Flávio) que ele resolve." if probs else ""
+        telegram(cab + "\n\n" + "\n\n".join("• " + m for m in msgs) + rod)
+    ref.set({"contagem": cont, "enviados": enviados, "atualizado": AGORA.isoformat(timespec="seconds")})
+
 # ---------------------------------------------------------------- principal
 def recomeca_do_zero():
     for col in ("noticias", "feeds"):
@@ -663,16 +831,36 @@ def main():
         except Exception as e:
             erros.append(f"carteira {cli}: {e}")
     ativos = sorted(por_ativo)
+    for cli in CLIENTES:
+        n = sum(1 for cs in por_ativo.values() if cli in cs)
+        if n < 3:
+            alerta("carteira vazia " + cli, f"Só achei {n} ativos no app do cliente {cli}. O app pode ter mudado de formato ou estar fora do ar.", True)
+    try:
+        cadastro.update({k: v for k, v in cadastro_salvo().items() if k not in cadastro})
+    except Exception as e:
+        erros.append(f"cadastro salvo: {e}")
     sem_cadastro = [t for t in ativos if t not in cadastro]
+    if TESTE and os.environ.get("CADASTRO_TESTE"):
+        teste_cad = {}
+        cadastra_novos([x.strip().upper() for x in os.environ["CADASTRO_TESTE"].split(",") if x.strip()], teste_cad)
+        print("::notice::CADASTRO " + json.dumps(teste_cad, ensure_ascii=False))
+        print("::notice::INFORMES " + " | ".join(INFORMES))
+        return
     if sem_cadastro:
-        erros.append("ativos sem cadastro em ativos.json (so portais): " + ", ".join(sem_cadastro))
+        cadastra_novos(sem_cadastro, cadastro)
+    logos_faltando(cadastro, ativos)
+    confere_cotacoes()
+    try:
+        confere_intervalo()
+    except Exception as e:
+        erros.append(f"intervalo: {e}")
     desde = (AGORA.date() - dt.timedelta(days=JANELA_DIAS)).isoformat()
     log(f"turno {TURNO} | portais {BUSCAR_PORTAIS} | {len(ativos)} ativos | desde {desde} | limite US$ {LIMITE_USD}")
 
     # 1) fontes oficiais
     for t in ativos:
         info = cadastro.get(t)
-        if not info:
+        if not info or info.get("tipo") not in ("fii", "acao"):
             continue
         try:
             antes = len(novos)
@@ -727,6 +915,15 @@ def main():
             avisa_telegram(n)
     if CUSTO.parou_no_limite:
         erros.append(f"limite de US$ {br_num(LIMITE_USD)} atingido; os ativos restantes ficam para a proxima rodada")
+        alerta("limite", f"O limite de gasto por rodada (US$ {br_num(LIMITE_USD)}) foi atingido de novo e alguns ativos ficaram para depois. "
+               "Talvez seja hora de aumentar o limite.")
+    for e in erros:
+        if not e.startswith("limite de US$"):
+            alerta("erro " + e[:70], "Erro: " + e[:300], bool(ERRO_GRAVE.search(e)))
+    if FALHAS_IA:
+        grave = any(ERRO_GRAVE.search(f) for f in FALHAS_IA)
+        alerta("ia", f"A IA falhou em {len(FALHAS_IA)} resumo(s) nesta rodada. Exemplo: {FALHAS_IA[0][:200]}"
+               + (" Parece ser problema de crédito ou da chave da API." if grave else ""), grave)
     reg = {"inicio": AGORA.isoformat(timespec="seconds"), "turno": TURNO, "portais": BUSCAR_PORTAIS,
            "ativos": len(ativos), "clientes": list(CLIENTES), "novas": len(novos), "importantes": len(importantes),
            "chamadas_ia": CUSTO.chamadas, "tokens_entrada": CUSTO.entrada, "tokens_saida": CUSTO.saida,
@@ -737,6 +934,11 @@ def main():
     if not TESTE:
         db().collection("execucoes").document(AGORA.strftime("%Y-%m-%d_%H%M")).set(reg)
         db().collection("config").document("ultima_execucao").set(reg)
+    try:
+        envia_alertas()
+    except Exception as e:
+        log("falha ao enviar alertas:", e)
+        telegram("⚠️ Robô de notícias: não consegui processar os avisos desta rodada (" + str(e)[:200] + "). Mande para o Claude.")
     print(f"::notice::{len(novos)} novas, {len(importantes)} importantes, custo US$ {CUSTO.usd:.4f}, "
           f"{CUSTO.chamadas} chamadas, {CUSTO.buscas} pesquisas, erros: {len(erros)}")
     for e in erros[:10]:
