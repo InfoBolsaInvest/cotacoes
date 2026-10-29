@@ -4,13 +4,19 @@ on:
     inputs:
       cliente:
         default: 'flavio'
+      apagar:
+        description: '1 = so apaga o ramo previa'
+        default: '0'
 permissions:
   contents: write
 jobs:
   copia:
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - if: inputs.apagar == '1'
+        run: git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" --delete previa
+      - if: inputs.apagar != '1'
+        run: |
           mkdir p && cd p && git init -q -b previa
           curl -sf "https://firestore.googleapis.com/v1/projects/infobolsa-clientes/databases/(default)/documents/feeds/${{ inputs.cliente }}" -o feed.json
           git config user.name "cotacoes-bot"; git config user.email "cotacoes-bot@users.noreply.github.com"
