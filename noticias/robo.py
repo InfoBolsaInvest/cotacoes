@@ -201,7 +201,7 @@ def extrair_proventos(ticker, nome, assunto, pdf_bytes):
                 {"type": "text", "text": f"""Aviso de proventos de {nome}. Extraia os proventos da acao {ticker} ({classe}).
 Se o documento tiver valores diferentes por especie de acao, use os da {classe}.
 Para JCP, informe o valor bruto e, se o documento trouxer, o valor liquido para pessoa fisica (se nao trouxer, use null).
-Datas no formato AAAA-MM-DD. "data_com" e o ultimo dia para ter a acao e receber. Se o pagamento ainda nao tiver data, use null.
+Datas no formato AAAA-MM-DD. "data_com" e o ultimo dia para ter a acao e receber (tambem chamada data-base ou "data com"); NUNCA use a data ex, que e o dia seguinte. Se o pagamento ainda nao tiver data, use null.
 So liste proventos que ESTE documento esta anunciando ou aprovando, com valor por acao. Se o documento so traz orientacoes
 (tributacao, investidor nao residente, cadastro, agenda) ou apenas lembra um provento ja anunciado em outro documento,
 devolva "proventos": [] e use titulo e resumo que descrevam o que o documento realmente informa.
@@ -211,7 +211,7 @@ devolva "proventos": [] e use titulo e resumo que descrevam o que o documento re
 Responda somente com JSON neste formato:
 {{"titulo": "titulo curto, ate 70 caracteres", "resumo": "1 frase curta dizendo o que foi aprovado (sem repetir valores e datas)", "importante": false, "motivo": "",
  "proventos": [{{"tipo": "Dividendo ou JCP", "valor_bruto": 0.0, "valor_liquido": null, "data_com": "AAAA-MM-DD", "pagamento": "AAAA-MM-DD"}}]}}"""}]
-    msg = ia().messages.create(model=MODELO, max_tokens=600, messages=[{"role": "user", "content": conteudo}])
+    msg = ia().messages.create(model=MODELO, max_tokens=600, temperature=0, messages=[{"role": "user", "content": conteudo}])
     CUSTO.soma(msg.usage)
     return _json_da_resposta(msg)
 
