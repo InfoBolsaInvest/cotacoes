@@ -17,9 +17,8 @@ import urllib.parse, urllib.request
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------- configuracao
-CLIENTES = {
-    "flavio": "https://carteiraflavio.netlify.app/",
-}
+CLIENTES = {k: v for k, v in json.load(open(os.path.join(AQUI, "clientes.json"), encoding="utf-8")).items()
+            if not k.startswith("_")}
 MODELO = "claude-haiku-4-5-20251001"
 PRECO_ENTRADA = 1.00 / 1e6      # US$ por token de entrada (Haiku 4.5)
 PRECO_SAIDA = 5.00 / 1e6        # US$ por token de saida
@@ -391,9 +390,14 @@ def avisa_telegram(item):
 def tickers_do_app(url):
     corpo, _ = http(url + ("&" if "?" in url else "?") + "t=" + str(int(time.time())))
     s = corpo.decode("utf-8", "replace")
+    # jeito padrao para qualquer app: <script type="application/json" id="ib-ativos">["HGLG11", ...]</script>
+    m = re.search(r'<script[^>]*id=["\']ib-ativos["\'][^>]*>(.*?)</script>', s, re.S)
+    if m:
+        lista = json.loads(m.group(1))
+        return sorted({(x["ticker"] if isinstance(x, dict) else str(x)).strip().upper() for x in lista if x})
     m = re.search(r"const DATA = (\{.*?\});\s*\n", s, re.S)
     if not m:
-        raise ValueError("DATA nao encontrado em " + url)
+        raise ValueError("lista de ativos (ib-ativos ou DATA) nao encontrada em " + url)
     dados = json.loads(m.group(1))
     return sorted({a["ticker"] for a in dados["ativos"] if a.get("classe") in ("acoes", "fiis")})
 

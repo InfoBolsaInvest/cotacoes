@@ -1,0 +1,4 @@
+{
+  "_como_usar": "Um cliente por linha: nome curto (vira o documento feeds/NOME no Firestore) e o endereco do app publicado. O app precisa ter a lista de ativos num bloco <script type=\"application/json\" id=\"ib-ativos\">[\"HGLG11\", \"ITSA4\"]</script> (ou o objeto DATA do app do Flavio).",
+  "flavio": "https://carteiraflavio.netlify.app/"
+}
