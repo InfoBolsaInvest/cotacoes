@@ -166,12 +166,26 @@ Responda somente com JSON neste formato:
     CUSTO.soma(msg.usage)
     return _json_da_resposta(msg)
 
+OPINIAO = re.compile(r"pre[cç]o[- ]alvo|recomenda[cç][aã]o|potencial de (alta|valoriza)|carteira recomendada|rating de compra", re.I)
+
+def limpa_opiniao():
+    if TESTE:
+        return 0
+    n = 0
+    for snap in db().collection("noticias").where("origem", "==", "portal").stream():
+        d = snap.to_dict()
+        if OPINIAO.search(d.get("titulo", "") + " " + d.get("resumo", "")):
+            snap.reference.delete()
+            n += 1
+    return n
+
 def buscar_portais(ticker, info, desde_iso, ja_publicados=()):
     if not CUSTO.pode(0.06):
         return []
     nome = info.get("nome", ticker)
     prompt = f"""Pesquise noticias publicadas em portais de noticias desde {iso_para_br(desde_iso)} sobre {nome}, codigo de negociacao {ticker} na B3.
 Inclua SOMENTE noticias claramente sobre este ativo: o texto precisa citar o codigo {ticker} ou o nome exato "{nome}". Descarte qualquer coisa sobre outra empresa ou fundo com nome parecido, paginas de cotacao, foruns, listas genericas de "melhores ativos", conteudo patrocinado e materias anteriores a {iso_para_br(desde_iso)}.
+Descarte tambem materias cujo assunto principal seja recomendacao de analistas (compra, venda, neutro), preco-alvo, potencial de valorizacao ou carteira recomendada.
 Assuntos que JA foram publicados sobre este ativo (nao traga noticia sobre o mesmo fato, mesmo de outro portal):
 {chr(10).join("- " + t for t in ja_publicados) or "- nenhum"}
 Se nao houver nada novo, devolva a lista vazia. No maximo 3 itens.
@@ -213,6 +227,8 @@ Responda somente com JSON neste formato:
             continue
         data = (it.get("data") or "")[:10]
         if not re.match(r"\d{4}-\d{2}-\d{2}$", data) or data < desde_iso[:10]:
+            continue
+        if OPINIAO.search(it.get("titulo", "") + " " + it.get("resumo", "")):
             continue
         bons.append(it)
     return bons
@@ -601,6 +617,13 @@ def main():
             except Exception as e:
                 erros.append(f"{t} portais: {e}")
                 traceback.print_exc()
+
+    try:
+        removidas = limpa_opiniao()
+        if removidas:
+            log(f"removidas {removidas} materias de recomendacao de analistas")
+    except Exception as e:
+        erros.append(f"limpeza: {e}")
 
     # 3) feed de cada cliente (um documento por cliente, lido pelo app)
     if not TESTE:
