@@ -80,6 +80,13 @@ def telegram(texto, preview=False):
 
 def main():
     itens, estado = candidatas()
+    # o radar pode estar rodando ao mesmo tempo (ex.: primeira rodada do dia): espera ate 15 min pelas noticias
+    espera = 0
+    while not itens and espera < 15 and not TESTE:
+        log("sem noticias ainda; esperando o radar terminar...")
+        time.sleep(60)
+        espera += 1
+        itens, estado = candidatas()
     ult = estado.get("ultimo_ts")
     if ult and AGORA - dt.datetime.fromisoformat(ult) < dt.timedelta(hours=3) and os.environ.get("FORCAR") != "1":
         log("ja mandou ha menos de 3 horas (rodada repetida pelo agendamento); nada a fazer")
