@@ -4,6 +4,11 @@ on:
     # a cada 30 minutos, das 7h as 22h de Brasilia (10h as 01h UTC), todos os dias
     - cron: '5,35 10-23 * * *'
     - cron: '5,35 0-1 * * *'
+  push:
+    # roda na hora quando o proprio radar for alterado (serve de teste)
+    paths:
+      - 'noticias/radar.py'
+      - '.github/workflows/radar.yml'
   workflow_dispatch:
     inputs:
       teste:
