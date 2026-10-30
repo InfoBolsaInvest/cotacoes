@@ -19,7 +19,7 @@ from robo import http, log, db, id_doc, sem_travessao, tickers_do_app, rad_docum
     PRECO_ENTRADA, PRECO_SAIDA, RAD, data_br_para_iso, CLIENTES
 
 TESTE = os.environ.get("TESTE") == "1"
-MAX_DIA = int(os.environ.get("RADAR_MAX_DIA") or "50")
+MAX_DIA = int(os.environ.get("RADAR_MAX_DIA") or "300")
 LIMITE_DIA_USD = float(os.environ.get("RADAR_LIMITE_USD") or "1.50")
 JANELA_H = int(os.environ.get("RADAR_JANELA_H") or "20")
 LOTE = 30
@@ -29,8 +29,6 @@ HOJE = AGORA.strftime("%Y-%m-%d")
 
 FEEDS = [
     ("InfoMoney", "https://www.infomoney.com.br/feed/"),
-    ("InfoMoney Mercados", "https://www.infomoney.com.br/mercados/feed/"),
-    ("InfoMoney FIIs", "https://www.infomoney.com.br/onde-investir/fundos-imobiliarios/feed/"),
     ("Money Times", "https://www.moneytimes.com.br/feed/"),
     ("Seu Dinheiro", "https://www.seudinheiro.com/feed/"),
     ("InvestNews", "https://investnews.com.br/feed/"),
@@ -38,8 +36,6 @@ FEEDS = [
     ("Suno Notícias", "https://www.suno.com.br/noticias/feed/"),
     ("Brazil Journal", "https://braziljournal.com/feed/"),
     ("Exame Invest", "https://exame.com/invest/feed/"),
-    ("Valor Investe", "https://valorinveste.globo.com/rss/valor-investe/"),
-    ("InfoMoney Internacional", "https://www.infomoney.com.br/mercados/internacional/feed/"),
 ]
 
 # ---------------------------------------------------------------- leitura dos feeds
