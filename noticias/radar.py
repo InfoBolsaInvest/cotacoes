@@ -151,7 +151,7 @@ Para cada item (id, fonte, titulo, trecho), responda:
 - "categoria": uma entre "Ações", "FIIs e Fiagros", "Renda fixa", "Macro e juros", "Câmbio", "Exterior", "Cripto", "Outros".
 - "video": true se rende pauta de video: historia pouco conhecida, empresa ou fundo pouco falado com fato forte, corte ou salto de dividendo, OPA, calote, recuperacao judicial, polemica, mudanca de regra, numero chamativo. false para noticia de rotina.
 - "motivo": se video for true, em ate 12 palavras por que rende video. Senao "".
-- "resumo": uma frase curta em portugues simples dizendo o que aconteceu, com suas palavras, neutra, sem opiniao.
+- "resumo": 1 ou 2 frases curtas em portugues simples dizendo o que aconteceu e o numero principal (se houver), com suas palavras, neutro, sem opiniao. So use informacao do titulo e do trecho; nao invente numero.
 Escrita: nunca use travessao; percentuais com 2 casas e virgula decimal.
 Responda somente com JSON: {"itens": [{"id": "...", "relevante": true, "tickers": [], "categoria": "...", "video": false, "motivo": "", "resumo": "..."}]}"""
 
@@ -184,7 +184,7 @@ def triagem(itens):
 def esc(t):
     return html.escape(t or "", quote=False)
 
-def envia(texto):
+def envia(texto, formato_html=True, previa=False):
     tok, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if TESTE or not tok or not chat:
         log("[telegram]\n" + re.sub(r"<[^>]+>", "", texto) + "\n")
@@ -192,8 +192,9 @@ def envia(texto):
     for tentativa in range(3):
         try:
             http(f"https://api.telegram.org/bot{tok}/sendMessage",
-                 data=urllib.parse.urlencode({"chat_id": chat, "text": texto[:3900], "parse_mode": "HTML",
-                                              "disable_web_page_preview": "true"}).encode())
+                 data=urllib.parse.urlencode({"chat_id": chat, "text": texto[:3900],
+                                              **({"parse_mode": "HTML"} if formato_html else {}),
+                                              "disable_web_page_preview": "false" if previa else "true"}).encode())
             time.sleep(1.2)
             return True
         except Exception as e:
@@ -201,22 +202,18 @@ def envia(texto):
             time.sleep(3 * (tentativa + 1))
     return False
 
-def monta_mensagem(it, r, clientes_do_ativo):
-    cab = f"📰 <b>{esc(r.get('categoria') or 'Mercado')}</b> | {esc(it['fonte'])}"
-    if r.get("tickers"):
-        cab += " | " + esc(" ".join(r["tickers"][:4]))
-    partes = [cab, f"<b>{esc(sem_travessao(it['titulo']))}</b>"]
+def monta_mensagem(it, r):
+    """Texto ja no formato do WhatsApp (*negrito*), para copiar e colar direto no grupo."""
+    partes = ["📰 *" + sem_travessao(it["titulo"]).replace("*", "") + "*"]
     if r.get("resumo"):
-        partes.append(esc(sem_travessao(r["resumo"])))
-    if clientes_do_ativo:
-        linhas = []
-        for tk, cs in clientes_do_ativo.items():
-            linhas.append(f"{esc(tk)}: " + ", ".join(sorted(c.capitalize() for c in cs)))
-        partes.append("👥 <b>Clientes com esse ativo</b>\n" + "\n".join(linhas))
-    if r.get("video"):
-        partes.append("🎬 <b>Dá vídeo:</b> " + esc(sem_travessao(r.get("motivo") or "assunto chamativo")))
+        partes.append(sem_travessao(r["resumo"]))
     partes.append(it["link"])
     return "\n\n".join(partes)
+
+def monta_clientes(clientes_do_ativo):
+    """Mensagem separada (so para o Douglas) com quem tem o ativo, para nao ir junto ao copiar."""
+    linhas = [f"{esc(tk)}: " + ", ".join(sorted(c.capitalize() for c in cs)) for tk, cs in clientes_do_ativo.items()]
+    return "👥 <b>Clientes com o ativo da notícia acima</b>\n" + "\n".join(linhas)
 
 # ---------------------------------------------------------------- principal
 def main():
@@ -281,7 +278,9 @@ def main():
             marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": False, "motivo": "teto do dia",
                                    **dados_noticia(it, r)})
             continue
-        if envia(monta_mensagem(it, r, dos_clientes)):
+        if envia(monta_mensagem(it, r), formato_html=False, previa=True):
+            if dos_clientes:
+                envia(monta_clientes(dos_clientes))
             marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": True, **dados_noticia(it, r),
                                    "video": bool(r.get("video")), "clientes": sorted({c for cs in dos_clientes.values() for c in cs})})
             meta["enviados"] += 1
