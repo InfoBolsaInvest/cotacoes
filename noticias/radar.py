@@ -122,6 +122,13 @@ def ja_vistos(ids):
                 out.add(snap.id)
     return out
 
+def dados_noticia(it, r):
+    """Campos guardados de cada noticia relevante (usados pelo envio do WhatsApp)."""
+    return {"relevante": True, "link": it["link"], "fonte": it["fonte"], "oficial": bool(it.get("oficial")),
+            "resumo_fonte": it["resumo_fonte"][:300], "resumo": (r.get("resumo") or "")[:300],
+            "categoria": r.get("categoria") or "", "tickers": (r.get("tickers") or [])[:6],
+            "ts": AGORA.isoformat(timespec="seconds")}
+
 def marca_visto(doc_id, dados):
     if not TESTE:
         db().collection("radar").document(doc_id).set(dados)
@@ -271,10 +278,11 @@ def main():
     enviados = 0
     for prioridade, it, r, dos_clientes in fila:
         if meta["enviados"] >= MAX_DIA:
-            marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": False, "motivo": "teto do dia"})
+            marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": False, "motivo": "teto do dia",
+                                   **dados_noticia(it, r)})
             continue
         if envia(monta_mensagem(it, r, dos_clientes)):
-            marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": True,
+            marca_visto(it["id"], {"titulo": it["titulo"][:200], "dia": HOJE, "enviado": True, **dados_noticia(it, r),
                                    "video": bool(r.get("video")), "clientes": sorted({c for cs in dos_clientes.values() for c in cs})})
             meta["enviados"] += 1
             enviados += 1
