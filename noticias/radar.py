@@ -164,10 +164,15 @@ def triagem(itens):
         lote = itens[i:i + LOTE]
         linhas = "\n".join(json.dumps({"id": it["id"], "fonte": it["fonte"], "titulo": it["titulo"],
                                        "trecho": it["resumo_fonte"][:200]}, ensure_ascii=False) for it in lote)
-        msg = ia().messages.create(model=MODELO, max_tokens=6000,
-                                   messages=[{"role": "user", "content": PROMPT + "\n\nItens:\n" + linhas}])
-        GASTO.usd += (msg.usage.input_tokens or 0) * PRECO_ENTRADA + (msg.usage.output_tokens or 0) * PRECO_SAIDA
-        for r in robo._json_da_resposta(msg).get("itens", []):
+        try:
+            msg = ia().messages.create(model=MODELO, max_tokens=6000,
+                                       messages=[{"role": "user", "content": PROMPT + "\n\nItens:\n" + linhas}])
+            GASTO.usd += (msg.usage.input_tokens or 0) * PRECO_ENTRADA + (msg.usage.output_tokens or 0) * PRECO_SAIDA
+            resp = robo._json_da_resposta(msg).get("itens", [])
+        except Exception as e:
+            log("triagem falhou num lote:", e)
+            continue
+        for r in resp:
             if r.get("id"):
                 out[r["id"]] = r
     return out
