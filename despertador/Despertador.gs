@@ -39,6 +39,19 @@ function relogio() {
     chama('noticias.yml', { turno: 'noite' });
     memoria.setProperty('noite', dia);
   }
+
+  // Radar de notícias do mercado: de 30 em 30 minutos, das 7h às 22h40, todos os dias
+  if (hora >= '07:00' && hora <= '22:40' && Number(hora.slice(3)) % 30 < 10) chama('radar.yml');
+
+  // Notícia pronta pro WhatsApp: 10h e 18h, uma vez cada por dia
+  if (hora >= '10:00' && hora < '18:00' && memoria.getProperty('whats_manha') !== dia) {
+    chama('whatsapp.yml');
+    memoria.setProperty('whats_manha', dia);
+  }
+  if (hora >= '18:00' && memoria.getProperty('whats_tarde') !== dia) {
+    chama('whatsapp.yml');
+    memoria.setProperty('whats_tarde', dia);
+  }
 }
 
 // Rodar uma vez para ligar o despertador (de 10 em 10 minutos).
@@ -50,5 +63,7 @@ function instalar() {
   // não repete hoje as rodadas de notícias que já aconteceram
   if (Utilities.formatDate(new Date(), FUSO, 'HH:mm') >= '07:30') memoria.setProperty('manha', agora);
   if (Utilities.formatDate(new Date(), FUSO, 'HH:mm') >= '19:00') memoria.setProperty('noite', agora);
+  if (Utilities.formatDate(new Date(), FUSO, 'HH:mm') >= '10:00') memoria.setProperty('whats_manha', agora);
+  if (Utilities.formatDate(new Date(), FUSO, 'HH:mm') >= '18:00') memoria.setProperty('whats_tarde', agora);
   chama('atualiza.yml'); // teste: se der erro aqui, a chave do GitHub não está certa
 }

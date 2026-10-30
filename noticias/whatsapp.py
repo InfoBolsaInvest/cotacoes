@@ -80,6 +80,10 @@ def telegram(texto, preview=False):
 
 def main():
     itens, estado = candidatas()
+    ult = estado.get("ultimo_ts")
+    if ult and AGORA - dt.datetime.fromisoformat(ult) < dt.timedelta(hours=3) and os.environ.get("FORCAR") != "1":
+        log("ja mandou ha menos de 3 horas (rodada repetida pelo agendamento); nada a fazer")
+        return
     log(f"{len(itens)} noticias candidatas")
     if not itens:
         robo.telegram("ℹ️ Notícia pro WhatsApp: não achei notícia nova desde o último envio. Se isso se repetir, mande para o Claude.")
