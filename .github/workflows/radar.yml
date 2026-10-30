@@ -1,0 +1,51 @@
+name: Radar de noticias
+on:
+  schedule:
+    # a cada 30 minutos, das 7h as 22h de Brasilia (10h as 01h UTC), todos os dias
+    - cron: '5,35 10-23 * * *'
+    - cron: '5,35 0-1 * * *'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: '1 = so mostra no log, nao grava nem manda no Telegram'
+        default: '0'
+      janela_h:
+        description: 'quantas horas para tras olhar'
+        default: '20'
+permissions:
+  contents: read
+concurrency:
+  group: radar
+  cancel-in-progress: false
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q anthropic firebase-admin
+      - name: Radar
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RADAR_MAX_DIA: ${{ vars.RADAR_MAX_DIA }}
+          RADAR_LIMITE_USD: ${{ vars.RADAR_LIMITE_USD }}
+          RADAR_JANELA_H: ${{ inputs.janela_h }}
+          TESTE: ${{ inputs.teste }}
+        run: python3 noticias/radar.py
+      - name: Avisa no Telegram se o radar quebrou
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          # no maximo 1 aviso por hora (so nas rodadas das :05)
+          [ "$(date -u +%M)" -lt 30 ] || exit 0
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=⚠️ O radar de notícias parou com erro ($(TZ=America/Sao_Paulo date +'%d/%m %H:%M')). Mande esta mensagem para o Claude. Rodada: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
