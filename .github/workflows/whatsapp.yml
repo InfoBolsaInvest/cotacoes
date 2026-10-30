@@ -1,0 +1,47 @@
+name: Noticia pro WhatsApp
+on:
+  schedule:
+    # 10h e 18h de Brasilia (13h e 21h UTC), todos os dias
+    - cron: '2 13,21 * * *'
+  push:
+    # roda na hora quando o proprio envio for alterado (serve de teste)
+    paths:
+      - 'noticias/whatsapp.py'
+      - '.github/workflows/whatsapp.yml'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: '1 = so mostra no log, nao grava nem manda no Telegram'
+        default: '0'
+permissions:
+  contents: read
+concurrency:
+  group: whatsapp
+  cancel-in-progress: false
+jobs:
+  whatsapp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q anthropic firebase-admin
+      - name: Escolhe e resume a noticia
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TESTE: ${{ inputs.teste }}
+        run: python3 noticias/whatsapp.py
+      - name: Avisa no Telegram se quebrou
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=⚠️ A notícia pro WhatsApp deu erro ($(TZ=America/Sao_Paulo date +'%d/%m %H:%M')). Mande esta mensagem para o Claude. Rodada: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
