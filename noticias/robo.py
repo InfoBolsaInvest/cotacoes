@@ -63,7 +63,8 @@ TZ_BR = dt.timezone(dt.timedelta(hours=-3))
 AGORA = dt.datetime.now(TZ_BR)
 TURNO = os.environ.get("TURNO") or ("manha" if AGORA.hour < 12 else "noite")
 BUSCAR_PORTAIS = os.environ.get("PORTAIS", "auto")
-BUSCAR_PORTAIS = (TURNO == "manha") if BUSCAR_PORTAIS == "auto" else BUSCAR_PORTAIS == "1"
+# portais so na manha de segunda a sexta (pedido de 02/11/2026 para economizar; documentos oficiais seguem todo dia)
+BUSCAR_PORTAIS = (TURNO == "manha" and AGORA.weekday() < 5) if BUSCAR_PORTAIS == "auto" else BUSCAR_PORTAIS == "1"
 TESTE = os.environ.get("TESTE") == "1"   # nao grava nada, so mostra
 SO_RENDIMENTOS = os.environ.get("REPROCESSAR_RENDIMENTOS") == "1"   # refaz so os proventos
 ALERTAS = []      # (chave, texto, imediato): problemas para avisar o Douglas no Telegram
@@ -533,10 +534,31 @@ CATEGORIAS_ACAO = {
     "Dados Econômico-Financeiros": "Comunicado",
 }
 _rad_cache = None
+_rad_erro = None
+
+class RadFora(Exception):
+    pass
+
 def rad_documentos(desde_iso):
-    global _rad_cache
+    """Lista do RAD da CVM, baixada uma vez por rodada. Se o site estiver fora, tenta 3 vezes e
+    depois deixa as acoes para a proxima rodada (vira um unico erro, nao um por acao)."""
+    global _rad_erro
     if _rad_cache is not None:
         return _rad_cache
+    if _rad_erro is not None:
+        raise RadFora(_rad_erro)
+    for tentativa in range(3):
+        try:
+            return _rad_baixa(desde_iso)
+        except Exception as e:
+            _rad_erro = str(e)
+            log(f"RAD da CVM falhou (tentativa {tentativa + 1}): {e}")
+            if tentativa < 2:
+                time.sleep(20 * (tentativa + 1))
+    raise RadFora(_rad_erro)
+
+def _rad_baixa(desde_iso):
+    global _rad_cache, _rad_erro
     d0 = dt.date.fromisoformat(desde_iso)
     corpo = json.dumps({"dataDe": d0.strftime("%d/%m/%Y"), "dataAte": AGORA.strftime("%d/%m/%Y"),
                         "empresa": "", "setorAtividade": "-1", "categoriaEmissor": "-1", "situacaoEmissor": "-1",
@@ -560,7 +582,7 @@ def rad_documentos(desde_iso):
                      "tipo": f[3].strip(), "assunto": html.unescape(assunto),
                      "entrega": data_br_para_iso(re.sub(r"<[^>]+>\d*</spanOrder>", "", f[6])),
                      "seq": dl.group(1), "versao": dl.group(2), "protocolo": dl.group(3)})
-    _rad_cache = docs
+    _rad_cache, _rad_erro = docs, None
     return docs
 
 def fontes_acao(ticker, info, desde_iso, novos):
@@ -885,6 +907,10 @@ def main():
             else:
                 fontes_acao(t, info, desde, novos)
             log(f"{t}: oficiais +{len(novos) - antes}")
+        except RadFora as e:
+            msg = f"site da CVM (RAD) sem resposta; os comunicados das ações ficam para a próxima rodada ({e})"
+            if msg not in erros:
+                erros.append(msg)
         except Exception as e:
             erros.append(f"{t} oficial: {e}")
             traceback.print_exc()
