@@ -1,4 +1,4 @@
-import json, os, time, urllib.request, datetime
+import json, os, time, urllib.request, urllib.parse, datetime
 
 UA = {'User-Agent': 'Mozilla/5.0 (cotacoes InfoBolsa)'}
 B3 = 'https://cotacao.b3.com.br/mds/api/v1/instrumentQuotation/{}'
@@ -90,7 +90,25 @@ for t in tickers:
     time.sleep(0.4)
 
 agora = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime('%Y-%m-%dT%H:%M')
-saida = {'atualizado': agora, 'ativos': ativos, 'falhas': falhas, 'motivos': motivos}
+# ativo sem cotacao por mais de 1 hora: costuma ser troca de codigo, grupamento ou saida da bolsa
+falha_desde = {t: antigo.get('falha_desde', {}).get(t, agora) for t in falhas}
+avisados = [t for t in antigo.get('avisados', []) if t in falhas]
+novos_aviso = [t for t in falhas if t not in avisados and len(falhas) < len(tickers)
+               and (datetime.datetime.fromisoformat(agora) - datetime.datetime.fromisoformat(falha_desde[t])).total_seconds() >= 3600]
+if novos_aviso:
+    tok, chat = os.environ.get('TELEGRAM_TOKEN'), os.environ.get('TELEGRAM_CHAT_ID')
+    if tok and chat:
+        texto = ('\u26a0\ufe0f Robô de cotações: ' + ', '.join(novos_aviso) + ' sem cotação há mais de 1 hora. '
+                 'Pode ser troca de código, grupamento ou saída da bolsa. '
+                 'Mande esta mensagem para o Claude (no chat da carteira do Flávio) que ele confere.')
+        try:
+            urllib.request.urlopen('https://api.telegram.org/bot' + tok + '/sendMessage',
+                                   data=urllib.parse.urlencode({'chat_id': chat, 'text': texto}).encode(), timeout=20)
+            avisados += novos_aviso
+        except Exception as e:
+            print('telegram falhou:', e)
+saida = {'atualizado': agora, 'ativos': ativos, 'falhas': falhas, 'motivos': motivos,
+         'falha_desde': falha_desde, 'avisados': avisados}
 json.dump(saida, open('cotacoes.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
 print('ok', len(tickers) - len(falhas), 'atualizados; falhas:', motivos)
 if len(falhas) == len(tickers):

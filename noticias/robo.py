@@ -172,6 +172,9 @@ Marque "importante": true SOMENTE nestes casos, e em "motivo" use exatamente um 
 - "Emissão de cotas" ou "Emissão de ações": nova oferta de cotas ou de acoes. Emissao de divida (debentures, letras financeiras, CRI, CRA) NAO e importante.
 - "Troca de gestor": troca da gestora ou da administradora de um FUNDO. Troca de diretor, vice-presidente ou conselheiro de empresa NAO e importante.
 - "Incorporação ou fusão": incorporacao, fusao, cisao ou liquidacao do fundo ou da empresa.
+- "Mudança de código": troca do codigo de negociacao (ticker) ou do nome do ativo na bolsa.
+- "Grupamento ou desdobramento": grupamento, desdobramento ou bonificacao de acoes ou cotas.
+- "Saída da bolsa": cancelamento de registro, fechamento de capital ou saida do ativo da bolsa.
 Em qualquer outro caso: "importante": false e "motivo": ""."""
 
 def _json_da_resposta(msg):
@@ -378,6 +381,9 @@ def avisa_telegram(item):
         return
     texto = (f"\U0001F514 {item['ticker']} | {item['tipo']}\n{item['titulo']}\n\n{item['resumo']}\n\n"
              f"Motivo do destaque: {item.get('motivo') or 'assunto relevante'}\n{item['link']}")
+    if item.get("motivo") in ("Mudança de código", "Grupamento ou desdobramento", "Saída da bolsa", "Incorporação ou fusão", "OPA"):
+        texto += ("\n\nIsso pode mexer no cadastro do ativo (código, quantidade ou preço). "
+                  "Mande esta mensagem para o Claude (no chat da carteira do Flávio) que ele confere os robôs e os apps.")
     if TESTE:
         log("  [teste telegram]", texto[:200])
         return
