@@ -66,6 +66,12 @@ BUSCAR_PORTAIS = os.environ.get("PORTAIS", "auto")
 # portais so na manha de segunda a sexta (pedido de 02/11/2026 para economizar; documentos oficiais seguem todo dia)
 BUSCAR_PORTAIS = (TURNO == "manha" and AGORA.weekday() < 5) if BUSCAR_PORTAIS == "auto" else BUSCAR_PORTAIS == "1"
 TESTE = os.environ.get("TESTE") == "1"   # nao grava nada, so mostra
+
+# PAUSA: se o arquivo noticias/PAUSADO existir, o robo nao roda (nao gasta credito de API).
+# A aba Noticias dos apps continua mostrando o que ja foi publicado. Para voltar, basta apagar o arquivo.
+if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "PAUSADO")) and not TESTE:
+    print("::notice::Robo de noticias PAUSADO a pedido do Douglas (arquivo noticias/PAUSADO). Nada foi buscado e nenhum credito foi gasto.")
+    sys.exit(0)
 SO_RENDIMENTOS = os.environ.get("REPROCESSAR_RENDIMENTOS") == "1"   # refaz so os proventos
 ALERTAS = []      # (chave, texto, imediato): problemas para avisar o Douglas no Telegram
 INFORMES = []     # avisos sem problema (ex.: ativo novo cadastrado sozinho)
