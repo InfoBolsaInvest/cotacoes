@@ -11,12 +11,6 @@ sys.path.insert(0, AQUI)
 import robo
 from robo import http, log, db, ia, MODELO, sem_travessao
 
-# PAUSA: se o arquivo noticias/PAUSADO existir, nao roda (nao gasta credito de API). Para voltar, apagar o arquivo.
-import os as _os, sys as _sys
-if _os.path.exists(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "PAUSADO")):
-    print("::notice::Pausado a pedido do Douglas (arquivo noticias/PAUSADO). Nenhum credito foi gasto.")
-    _sys.exit(0)
-
 TESTE = os.environ.get("TESTE") == "1"
 TZ = robo.TZ_BR
 AGORA = dt.datetime.now(TZ)
