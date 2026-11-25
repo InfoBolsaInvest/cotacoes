@@ -8,6 +8,7 @@ on:
     # roda na hora quando o proprio radar for alterado (serve de teste)
     paths:
       - 'noticias/radar.py'
+      - 'noticias/PAUSADO'
       - '.github/workflows/radar.yml'
   workflow_dispatch:
     inputs:
