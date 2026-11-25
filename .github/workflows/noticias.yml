@@ -4,6 +4,12 @@ on:
     # 7h30 e 19h de Brasilia (10:30 e 22:00 UTC), todos os dias
     - cron: '30 10 * * *'
     - cron: '0 22 * * *'
+  push:
+    # roda na hora quando o robo for alterado ou religado (apagar noticias/PAUSADO tambem conta)
+    paths:
+      - 'noticias/robo.py'
+      - 'noticias/PAUSADO'
+      - '.github/workflows/noticias.yml'
   workflow_dispatch:
     inputs:
       turno:
