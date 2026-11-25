@@ -1,420 +1,420 @@
 {
  "ativos": {
   "ALOS3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:45",
+   "hora_fonte": "2026-11-25 19:02:06",
    "preco": 26.23,
    "var_dia": 1.55
   },
   "ALZR11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:32",
+   "hora_fonte": "2026-11-25 19:01:56",
    "preco": 9.44,
    "var_dia": 1.61
   },
   "BBAS3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:46",
+   "hora_fonte": "2026-11-25 19:02:09",
    "preco": 14.69,
    "var_dia": 3.6
   },
   "BBDC4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:45",
+   "hora_fonte": "2026-11-25 19:02:06",
    "preco": 14.19,
    "var_dia": 4.19
   },
   "BBSE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:37",
+   "hora_fonte": "2026-11-25 19:02:00",
    "preco": 36.52,
    "var_dia": 0.83
   },
   "BMGB4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:51",
+   "hora_fonte": "2026-11-25 19:02:14",
    "preco": 4.72,
    "var_dia": -3.08
   },
   "BRAP3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:54",
+   "hora_fonte": "2026-11-25 19:02:16",
    "preco": 15.0,
    "var_dia": 3.23
   },
   "BRCO11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:42",
+   "hora_fonte": "2026-11-25 19:02:04",
    "preco": 104.54,
    "var_dia": 0.81
   },
   "BTCI11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:21",
+   "hora_fonte": "2026-11-25 19:01:48",
    "preco": 7.84,
    "var_dia": 3.16
   },
   "BTLG11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:24",
+   "hora_fonte": "2026-11-25 19:01:50",
    "preco": 97.0,
    "var_dia": 2.59
   },
   "CMIG4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:55",
+   "hora_fonte": "2026-11-25 19:02:17",
    "preco": 10.73,
    "var_dia": -0.83
   },
   "CPFE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:34",
+   "hora_fonte": "2026-11-25 19:01:58",
    "preco": 42.89,
    "var_dia": -1.4
   },
   "CPLE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:52",
+   "hora_fonte": "2026-11-25 19:02:14",
    "preco": 14.9,
    "var_dia": -0.53
   },
   "CPTS11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:22",
+   "hora_fonte": "2026-11-25 19:01:48",
    "preco": 6.65,
    "var_dia": 2.31
   },
   "CURY3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:35",
+   "hora_fonte": "2026-11-25 19:01:59",
    "preco": 26.39,
    "var_dia": 4.31
   },
   "CXSE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:53",
+   "hora_fonte": "2026-11-25 19:02:15",
    "preco": 20.3,
    "var_dia": 0.89
   },
   "DIVD11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:33",
+   "hora_fonte": "2026-11-25 19:01:57",
    "preco": 57.64,
    "var_dia": 1.55
   },
   "FGAA11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:59",
+   "hora_fonte": "2026-11-25 19:02:20",
    "preco": 7.75,
    "var_dia": 0.65
   },
   "GARE11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:32",
+   "hora_fonte": "2026-11-25 19:01:57",
    "preco": 8.02,
    "var_dia": 1.39
   },
   "GOAU4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:56",
+   "hora_fonte": "2026-11-25 19:02:18",
    "preco": 11.64,
    "var_dia": 2.37
   },
   "GOLD11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:49",
+   "hora_fonte": "2026-11-25 19:02:12",
    "preco": 21.58,
    "var_dia": -0.83
   },
   "GRND3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:39",
+   "hora_fonte": "2026-11-25 19:02:01",
    "preco": 3.85,
    "var_dia": 1.85
   },
   "HGCR11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:30",
+   "hora_fonte": "2026-11-25 19:01:54",
    "preco": 86.6,
    "var_dia": 1.41
   },
   "HGLG11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:25",
+   "hora_fonte": "2026-11-25 19:01:50",
    "preco": 143.61,
    "var_dia": 2.0
   },
   "HGRU11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:27",
+   "hora_fonte": "2026-11-25 19:01:52",
    "preco": 115.0,
    "var_dia": 1.65
   },
   "ISAE4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:44",
+   "hora_fonte": "2026-11-25 19:02:05",
    "preco": 26.16,
    "var_dia": 0.58
   },
   "ITSA4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:46",
+   "hora_fonte": "2026-11-25 19:02:08",
    "preco": 13.09,
    "var_dia": 1.24
   },
   "ITUB3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:37",
+   "hora_fonte": "2026-11-25 19:02:00",
    "preco": 43.75,
    "var_dia": 0.51
   },
   "ITUB4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:38",
+   "hora_fonte": "2026-11-25 19:02:01",
    "preco": 40.01,
    "var_dia": 0.68
   },
   "IVVB11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:48",
+   "hora_fonte": "2026-11-25 19:02:12",
    "preco": 472.1,
    "var_dia": -1.65
   },
   "JSRE11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:29",
+   "hora_fonte": "2026-11-25 19:01:53",
    "preco": 56.73,
    "var_dia": 0.75
   },
   "KLBN3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:55",
+   "hora_fonte": "2026-11-25 19:02:17",
    "preco": 3.43,
    "var_dia": 2.08
   },
   "KNCR11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:23",
+   "hora_fonte": "2026-11-25 19:01:49",
    "preco": 103.2,
    "var_dia": 0.78
   },
   "KNHF11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:42",
+   "hora_fonte": "2026-11-25 19:02:03",
    "preco": 86.95,
    "var_dia": 2.08
   },
   "KNRI11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:28",
+   "hora_fonte": "2026-11-25 19:01:53",
    "preco": 147.5,
    "var_dia": 3.87
   },
   "MCCI11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:41",
+   "hora_fonte": "2026-11-25 19:02:03",
    "preco": 90.24,
    "var_dia": 2.31
   },
   "MCRE11": {
-   "atualizado": "2026-11-25T18:36",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:36:02",
+   "hora_fonte": "2026-11-25 19:02:23",
    "preco": 6.48,
    "var_dia": 1.41
   },
   "MXRF11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:23",
+   "hora_fonte": "2026-11-25 19:01:49",
    "preco": 8.46,
    "var_dia": 1.08
   },
   "OIAG11": {
-   "atualizado": "2026-11-25T18:36",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:36:01",
+   "hora_fonte": "2026-11-25 19:02:22",
    "preco": 6.73,
    "var_dia": -1.61
   },
   "PETR4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:47",
+   "hora_fonte": "2026-11-25 19:02:09",
    "preco": 41.36,
    "var_dia": 2.0
   },
   "PMLL11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:43",
+   "hora_fonte": "2026-11-25 19:02:05",
    "preco": 99.09,
    "var_dia": 1.86
   },
   "POMO4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:40",
+   "hora_fonte": "2026-11-25 19:02:02",
    "preco": 3.43,
    "var_dia": 1.78
   },
   "RBIC11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:57",
+   "hora_fonte": "2026-11-25 19:02:18",
    "preco": 73.25,
    "var_dia": 0.25
   },
   "RECV3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:40",
+   "hora_fonte": "2026-11-25 19:02:02",
    "preco": 9.92,
    "var_dia": 1.02
   },
   "RURA11": {
-   "atualizado": "2026-11-25T18:36",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:36:03",
+   "hora_fonte": "2026-11-25 19:02:24",
    "preco": 7.43,
    "var_dia": 3.77
   },
   "RZAK11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:57",
+   "hora_fonte": "2026-11-25 19:02:19",
    "preco": 64.97,
    "var_dia": 1.52
   },
   "SAPR4": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:50",
+   "hora_fonte": "2026-11-25 19:02:13",
    "preco": 6.69,
    "var_dia": 0.6
   },
   "SBSP3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:50",
+   "hora_fonte": "2026-11-25 19:02:13",
    "preco": 28.48,
    "var_dia": 2.19
   },
   "TAEE11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:34",
+   "hora_fonte": "2026-11-25 19:01:58",
    "preco": 39.76,
    "var_dia": 0.03
   },
   "TGAR11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:30",
+   "hora_fonte": "2026-11-25 19:01:55",
    "preco": 30.12,
    "var_dia": 4.37
   },
   "TRXF11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:31",
+   "hora_fonte": "2026-11-25 19:01:55",
    "preco": 56.09,
    "var_dia": 4.24
   },
   "VALE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:48",
+   "hora_fonte": "2026-11-25 19:02:11",
    "preco": 56.9,
    "var_dia": 3.1
   },
   "VGIA11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:58",
+   "hora_fonte": "2026-11-25 19:02:20",
    "preco": 7.65,
    "var_dia": 1.19
   },
   "VGIP11": {
-   "atualizado": "2026-11-25T18:36",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:36:01",
+   "hora_fonte": "2026-11-25 19:02:22",
    "preco": 63.35,
    "var_dia": 1.75
   },
   "VGIR11": {
-   "atualizado": "2026-11-25T18:36",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:36:00",
+   "hora_fonte": "2026-11-25 19:02:21",
    "preco": 8.21,
    "var_dia": 1.86
   },
   "VISC11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:27",
+   "hora_fonte": "2026-11-25 19:01:52",
    "preco": 97.14,
    "var_dia": 2.33
   },
   "WEGE3": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:52",
+   "hora_fonte": "2026-11-25 19:02:15",
    "preco": 49.65,
    "var_dia": -1.1
   },
   "XPCA11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:02",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:59",
+   "hora_fonte": "2026-11-25 19:02:21",
    "preco": 6.52,
    "var_dia": 1.4
   },
   "XPML11": {
-   "atualizado": "2026-11-25T18:35",
+   "atualizado": "2026-11-25T19:01",
    "fonte": "B3",
-   "hora_fonte": "2026-11-25 18:35:26",
+   "hora_fonte": "2026-11-25 19:01:51",
    "preco": 86.97,
    "var_dia": 3.84
   }
  },
- "atualizado": "2026-11-25T18:36",
+ "atualizado": "2026-11-25T19:02",
  "avisados": [],
  "falha_desde": {},
  "falhas": [],
