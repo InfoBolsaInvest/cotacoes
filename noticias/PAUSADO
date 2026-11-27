@@ -1,3 +1,0 @@
-Robôs de notícias (carteiras), radar do Telegram e notícia do WhatsApp pausados.
-Regra do Douglas (25/11/2026): quando ele pedir para ativar, roda 1x na hora, fica pausado, roda 1x de novo 2 dias depois e volta a ficar pausado.
-Para rodar, apague este arquivo (a exclusão já dispara os três robôs na hora) e depois recoloque.
